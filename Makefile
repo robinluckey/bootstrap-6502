@@ -10,20 +10,18 @@ $(OBJDIR)/%.img : $(SRCDIR)/%.asm
 
 EXE := $(OBJDIR)/run
 
-# World's worst linker
-#
-# Sifts code location directives ("* = 1000") from each source file,
-# then generates a run6502 command that loads each image at the correct
-# location.
-#
-$(EXE) : $(OBJS) $(SRCS)
+$(EXE) : $(OBJS) $(SRCS) map
 	echo 'run6502 -I 0000 -X 0000 -R 1000 -P FFDD -G FFEE \' > $@
-	grep -E '\*\s*=' $(SRCS) \
-  	  | sed -e 's/src\/\(.*\)\.asm:[^0-9A-F]*\([0-9A-F]\+\)/  -l \2 $(OBJDIR)\/\1.img \\/' >> $@
+	sed -e 's/\(\w\+\)\s\+\(\w\+\)/ -l \1 $(OBJDIR)\/\2.img \\/' map >> $@
 	chmod a+x $@
 
-test : $(OBJDIR)/run
+map : $(SRCS)
+	grep 'ORG ' $(SRCS) \
+	  | sed -e 's/.\+\/\(.\+\)\.asm:\s\+ORG\s\+\([0-9A-Fa-f]\+\)/\2  \1/' \
+	  | sort > map
+
+test : $(EXE)
 	echo 'Hello, world!' | $(OBJDIR)/run
 
 clean :
-	rm -f $(OBJS) $(EXE)
+	rm -f $(OBJS) $(EXE) map

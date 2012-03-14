@@ -2,7 +2,7 @@
 ; Print ASCII hex codes for characters read from STDIN
 ;
 
-	* = 1000
+	ORG 1000
 
 20EEFF	JSR FFEE	; getchar()
 
