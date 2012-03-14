@@ -1,6 +1,6 @@
 #!/bin/bash
 
 DECIMAL_SIZE=$(wc -c $1 | cut -d' ' -f 1)
-HEX_OFFSET=+$(printf '%x' $(($DECIMAL_SIZE-1)) )
+HEX_OFFSET=$(printf '+%x' $(($DECIMAL_SIZE)) )
 
 run6502 -l 1000 $1 -d 1000 $HEX_OFFSET -x

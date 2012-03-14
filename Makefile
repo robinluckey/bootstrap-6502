@@ -1,7 +1,7 @@
 SRCDIR := src
 OBJDIR := bin
 
-SRCS := tohex.asm hexchars.asm
+SRCS := main.asm printhex.asm hexchars.asm printsz.asm
 OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.asm=.img))
 SRCS := $(addprefix $(SRCDIR)/,$(SRCS))
 

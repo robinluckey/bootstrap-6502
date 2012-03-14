@@ -2,14 +2,7 @@
 ; Print ASCII hex codes for characters read from STDIN
 ;
 
-	ORG 1000
-
-20EEFF	JSR FFEE	; getchar()
-
-C90A	CMP #'\n'	; end of line detected
-D004	BNE +4
-20DDFF	JSR FFDD	; putchar() -- echo the newline for nice exit
-00	BRK		; or, RTS
+	ORG FF10
 
 AA	TAX		; backup
 4A	LSR A		; high order nibble
@@ -28,4 +21,4 @@ A8	TAY		; lookup hex char
 B900FF	LDA FF00,Y
 20DDFF	JSR FFDD	; putchar()
 
-4C0010	JMP 1000	; repeat!
+60	RTS
