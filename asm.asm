@@ -2,6 +2,13 @@
 
 	; asm()
 	;
+	; initialize location counter
+	;
+A900	; LDA #00
+8580	; STA 80
+;+4.
+
+;*=1004
 	; skip spaces
 	;
 20EEFF	; JSR FFEE	; getchar()
@@ -13,25 +20,28 @@ C90A	; CMP #'\n'	; newline?
 F0F1	; BEQ -15
 	;
 C9FF	; CMP #FF	; EOF?
-D001	; BNE +1
+D006	; BNE +6
+A580	; LDA 80	; get location counter
+207010	; JSR 1070	; printhex()
 00	; BRK
 	;
 C93B	; CMP #';'	; comment?
-F009	; BEQ +9
+F00B	; BEQ +11
 	;
-202B10	; JSR 102B	; parse_hex_byte();
+203610	; JSR 1036	; parse_hex_byte();
 20DDFF	; JSR FFDD	; putchar();
-4C0010	; JMP 1000
+E680	; INC 80	; increment location counter
+4C0410	; JMP 1004
 	;
 	; skip_to_newline
 	;
 20EEFF	; JSR FFEE	; getchar()
 C90A	; CMP #'\n'
 D0F9	; BNE -7
-4C0010	; JMP 1000
-;+43.
+4C0410	; JMP 1004
+;+50.
 
-;*=102B
+;*=1036
 	; parse_hex_byte();
 	;
 	; hi nibble
@@ -57,7 +67,7 @@ C93A	; CMP #3A
 60	; RTS
 ;+28.
 
-;*=1048
+;*=1052
 	; printsz()
 	;
 A000	; LDY #0
@@ -71,12 +81,12 @@ D0F5	; BNE -11
 60	; RTS
 ;+14.
 
-;*=1056
+;*=1060
 	; "0123456789ABCDEF"
 30313233343536373839414243444546
 ; +16.
 
-;*=1068
+;*=1070
 	; printhex();
 	;
 AA	; TAX		; backup
@@ -86,14 +96,14 @@ AA	; TAX		; backup
 4A	; LSR A
 A8	; TAY		; lookup hex char
 18	; CLC
-B95610	; LDA 1058,Y
+B96010	; LDA 1060,Y
 20DDFF	; JSR FFDD	; putchar()
 
 8A	; TXA		; restore
 290F	; AND #0F		; low order nibble
 A8	; TAY		; lookup hex char
 18	; CLC
-B95610	; LDA 1058,Y
+B96010	; LDA 1060,Y
 20DDFF	; JSR FFDD	; putchar()
 
 60	; RTS
