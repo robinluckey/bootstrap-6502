@@ -1,14 +1,16 @@
-%.asm %.img :
+SRCDIR := src
+OBJDIR := bin
+
+SRCS := tohex.asm hexchars.asm
+OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.asm=.img))
+
+$(OBJDIR)/%.img : $(SRCDIR)/%.asm
 	cmd/hasm $< | cmd/pack > $@
 
-all: bin/tohex.img bin/hexchars.img
-
-bin/tohex.img : src/tohex.asm
-
-bin/hexchars.img : src/hexchars.asm
+all : $(OBJS)
 
 test : all
 	echo 'Hello, world!' | ./run
 
 clean :
-	rm -f bin/*.img
+	rm -f $(OBJS)
