@@ -1,0 +1,11 @@
+Assemble:
+
+$ cmd/hasm main.asm > main.img
+
+Disassemble:
+
+$ cmd/disasm main.img
+
+Execute:
+
+$ cmd/run main.img

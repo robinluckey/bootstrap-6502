@@ -1,0 +1,2 @@
+#!/bin/bash
+run6502 -I 0000 -X 0000 -R 1000 -P FFDD -G FFEE -l 1000 $1

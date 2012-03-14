@@ -10,9 +10,9 @@
 # 2. Keep only first column of text (should be hex codes)
 # 3. Remove newlines to compact result onto one line
 #    (also no trailing new line)
-# 4. Convert to upcase
+# 
 cut -f 1 -d ';' $@  \
-  | cut -f 1        \
-  | cut -f 1 -d' '  \
   | tr -d '\n'      \
-  | tr 'a-z' 'A-Z'
+  | tr -d '\t'      \
+  | tr -d ' '       \
+  | perl -e 'print pack "H*",<STDIN>'
