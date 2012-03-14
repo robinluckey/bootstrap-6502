@@ -1,11 +1,11 @@
 Assemble:
 
-$ cmd/hasm main.asm > main.img
+$ cmd/run asm.img < asm.asm > next.img
 
 Disassemble:
 
-$ cmd/disasm main.img
+$ cmd/disasm next.img
 
 Execute:
 
-$ cmd/run main.img
+$ cmd/run next.img
