@@ -1,4 +1,3 @@
-
 ;*=1000
 
 	; asm()
@@ -13,7 +12,7 @@ F0F5	; BEQ -11
 C90A	; CMP #'\n'	; newline?
 F0F1	; BEQ -15
 	;
-C923	; CMP #'#'	; EOF?
+C9FF	; CMP #FF	; EOF?
 D001	; BNE +1
 00	; BRK
 	;
@@ -99,5 +98,3 @@ B95610	; LDA 1058,Y
 
 60	; RTS
 ;+24.
-
-#
