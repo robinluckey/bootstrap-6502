@@ -1,0 +1,1 @@
+perl -e 'print pack "H*",<STDIN>'

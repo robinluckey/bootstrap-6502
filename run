@@ -1,0 +1,8 @@
+run6502 \
+	-l 1000 bin/tohex.img \
+	-l FF00 bin/hexchars.img \
+	-I 0000 \
+	-X 0000 \
+	-R 1000 \
+	-P FFDD \
+	-G FFEE

@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# HASM - the "hand assembler"
+#
+# Each source file must be hand-assembled and tab delimited.
+# Hexadecimal machine code instructions should be listed in
+# the first column and contain no white space.
+
+# 1. Strip out comments (begin with ';')
+# 2. Keep only first column of text (should be hex codes)
+# 3. Remove newlines to compact result onto one line
+#    (also no trailing new line)
+# 4. Convert to upcase
+cut -f 1 -d ';' $@ \
+  | cut -f 1 \
+  | tr -d '\n' \
+  | tr 'a-z' 'A-Z'

@@ -1,0 +1,240 @@
+00	BRK*
+01 bb	ORA (bb, X)
+02	ILL
+03	ILL
+04 bb	TSB bb
+05 bb	ORA bb
+06 bb	ASL bb
+07	ILL
+08	PHP
+09 bb	ORA bb
+0A	ASLA
+0B	ILL
+0C llhh	TSB hhll
+0D llhh	ORA hhll
+OE llhh	ASL hhll
+0F	ILL
+10 bb	BPL +bb
+11 bb	ORA (bb),Y
+12 bb	ORA (bb)
+13	ILL
+14 bb	TRB bb
+15 bb	ORA bb,X
+16 bb	ASL bb,X
+17	ILL
+18	CLC
+19 llhh	ORA hhll,Y
+1A	INA
+1B	ILL
+1C llhh	TRB hhll
+1D llhh	ORA hhll,X
+1E llhh	ASL hhll,X
+1F	ILL
+20 llhh	JSR hhll
+21 bb	AND (bb,X)
+22	ILL
+23	ILL
+24 bb	BIT bb
+25 bb	AND bb
+26 bb	ROL bb
+27	ILL
+28	PLP
+29 bb	AND #bb
+2A	ROLA
+2B	ILL
+2C llhh	BIT hhll
+2D llhh	AND hhll
+2E llhh	ROL hhll
+2F	ILL
+30 llhh	BMI hhll
+31 bb	AND (32),Y
+32 bb	AND (bb)
+33	ILL
+34 bb	BIT 35,X
+35 bb	AND bb,X
+36 bb	ROL bb,X
+37	ILL
+38	SEC
+39 llhh AND hhll,Y
+3A	DEA
+3B	ILL
+3C llhh BIT hhll,X
+3D llhh	AND hhll,X
+3E llhh	ROL hhll,X
+3F	ILL
+40	RTI
+41 bb	EOR (bb, X)
+42	ILL
+43	ILL
+44	ILL
+45 bb	EOR bb
+46 bb	LSR bb
+47	ILL
+48	PHA
+49 bb	EOR #bb
+4A	LSR A
+4B	ILL
+4C llhh	JMP hhll
+4D llhh	EOR hhll
+4E llhh	LSR hhll
+4F	ILL
+50 bb	BVC +bb
+51 bb	EOR (bb),Y
+52 bb	EOR (bb)
+53	ILL
+54	ILL
+55 bb	EOR bb,X
+56 bb	LSR bb,X
+57	ILL
+58	CLI
+59 llhh	EOR hhll,Y
+5A	PHY
+5B	ILL
+5C	ILL
+5D llhh	EOR hhll,X
+5E llhh	LSR hhll,X
+5F	ILL
+60	RTS
+61 bb	ADC (bb,X)
+62	ILL
+63	ILL
+64 bb	STZ bb
+65 bb	ADC bb
+66 bb	ROR bb
+67	ILL
+68	ILL
+69 bb	ADC #bb
+70 bb	BVS +bb
+71 bb	ADC (bb),Y
+72 bb	ADC (bb)
+73	ILL
+74 bb	STZ bb,X
+75 bb	ADC bb,X
+76 bb	ROR bb,X
+77	ILL
+78	SEI
+79 llhh	ADC hhll,Y
+7A	PLY
+7B	ILL
+7C llhh JMP (hhll,X)
+7D llhh	ADC hhll,X
+7E llhh	ROR hhll,X
+7F	ILL
+80 bb	BRA +bb
+81 bb	STA (bb,X)
+82	ILL
+83	ILL
+84 bb	STY bb
+85	STA bb
+86 bb	STX bb
+87	ILL
+88	DEY
+89 bb	BIT #bb
+8A	TXA
+8B	ILL
+8C llhh	STY hhll
+8D llhh	STA hhll
+8E llhh	STX hhll
+8F	ILL
+9A	TXS
+9B	ILL
+9C llhh	STZ hhll
+9D llhh	STA hhll,X
+9E llhh	STZ hhll,X
+9F	ILL
+A0 bb	LDY #bb
+A1 bb	LDA (bb,X)
+A2 bb	LDX #bb
+A3	ILL
+A4 bb	LDY bb
+A5 bb	LDA bb
+A6 bb	LDX bb
+A7	ILL
+A8	TAY
+A9 bb	LDA #bb
+AA      TAX
+AB	ILL
+AC llhh	LDY hhll
+AD llhh	LDA hhll
+AE llhh	LDX hhll
+AF	ILL
+B0 bb	BCS +bb
+B1 bb	LDA (bb),Y
+B2 bb	LDA (bb)
+B3	ILL
+B4 bb	LDY bb,X
+B5	LDA bb,X
+B6 bb	LDX bb,Y
+B7	ILL
+B8	CLV
+B9 llhh	LDA hhll,Y
+BA	TSX
+BB	ILL
+BC llhh	LDY hhll,X
+BD llhh	LDA hhll,X
+BE llhh	LDX hhll,X
+BF	ILL
+C0 bb	CPY #bb
+C1 bb	CMP (bb,X)
+C2	ILL
+C3	ILL
+C4 bb	CPY bb
+C5 bb	CMP bb
+C6 bb	DEC bb
+C7	ILL
+C8	INY
+C9 bb	CMP #bb
+CA	DEX
+CB	ILL
+CC llhh	CPY hhll
+CD llhh	CMP hhll
+CE llhh	DEC hhll
+CF	ILL
+D0 bb   BNE +bb
+D1 bb	CMP (bb),Y
+D2 bb	CMP (bb)
+D3	ILL
+D4	ILL
+D5 bb	CMP bb,X
+D6 bb	DEC bb,X
+D7	ILL
+D8	CLD
+D9 llhh	CMP hhll,Y
+DA	PHX
+DB	ILL
+DC	ILL
+DD llhh	CMP hhll,X
+DE llhh	DEC hhll,X
+DF	ILL
+E0 bb   CPX #bb
+E1 bb	SBC (bb,X)
+E2	ILL
+E3	ILL
+E4 bb	CPX bb
+E5 bb	SBC bb
+E6 bb	INC bb
+E7	ILL
+E8	INX
+E9 bb	SBC #bb
+EA	NOP
+EB	ILL
+EC llhh	CPX hhll
+ED llhh	INC hhll
+EE llhh	SBC hhll
+EF	ILL
+F0 bb	BEQ +bb
+F1 bb	SBC (bb),Y
+F2 bb	SBC (bb)
+F3	ILL
+F4	ILL
+F5 bb	SBC bb,X
+F6 bb	INC bb,X
+F7	ILL
+F8	SED
+F9 llhh	SBC hhll,Y
+FA	PLX
+FB	ILL
+FC	ILL
+FD llhh	SBC hhll,X
+FE llhh	INC hhll,X
+FF	ILL
