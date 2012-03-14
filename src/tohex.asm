@@ -19,7 +19,7 @@ AA	TAX		; backup
 A8	TAY		; lookup hex char
 18	CLC
 B900FF	LDA FF00,Y
-20DDFF	JSR FFDD	; put char()
+20DDFF	JSR FFDD	; putchar()
 
 8A	TXA		; restore
 290F	AND #0F		; low order nibble
