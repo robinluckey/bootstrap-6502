@@ -1,11 +1,11 @@
 Assemble:
 
-$ cmd/run asm.img < asm.asm > next.img
+$ make g0
 
 Disassemble:
 
-$ cmd/disasm next.img
+$ cmd/disasm g0
 
 Execute:
 
-$ cmd/run next.img
+$ cmd/run g0
