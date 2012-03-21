@@ -4,7 +4,7 @@
 	; The address must be calculated,
 	; then hand-copied here.
 	;
-4CC710	; JMP ????
+4CE210	; JMP ????
 
 .N	; incr_loc
 	;
@@ -48,6 +48,17 @@ B521	; LDA 21,X
 20 &N	; JSR incr_loc
 60	; RTS
 
+.S	; string_literal
+	;
+20EEFF	; JSR getchar
+C922	; CMP #'"'
+D001	; BNE +1
+60	; RTS
+20DDFF	; JSR putchar
+20 &N	; JSR incr_loc
+4C &S	; JMP string_literal
+
+
 .R	; parse_hex_byte
 	;
 	; hi nibble
@@ -74,9 +85,7 @@ C93A	; CMP #3A
 
 .X	; hex_digits
 	;
-	; "0123456789ABCDEF"
-	;
-30313233343536373839414243444546
+	"0123456789ABCDEF"
 
 .P	; printhex
 	;
@@ -113,7 +122,7 @@ C9FF	; CMP #FF	; EOF?
 D001	; BNE +1
 00	; BRK
 	;
-C920	; CMP #' '	; skip white space
+C9 " "	; CMP #' '	; skip white space
 F0F4	; BEQ loop	; -12
 C909	; CMP #'\t'
 F0F0	; BEQ loop	; -16
@@ -121,17 +130,22 @@ C90A	; CMP #'\n'
 F0EC	; BEQ loop	; -20
 	;
 	;		; switch on pseudo-op
-C92E	; CMP #'.'
+C9 "."	; CMP #'.'
 D006	; BNE +6
 20 &D	; JSR define_label
 4C &L	; JMP loop
 	;
-C926	; CMP #'&'
+C9 "&"	; CMP #'&'
 D006	; BNE +6
 20 &E	; JSR eval_label
 4C &L	; JMP loop 
 	;
-C93B	; CMP #';'
+C922	; CMP #'"'
+D006	; BNE +6
+20 &S	; JSR string_literal
+4C &L	; JMP loop
+	;
+C9 ";"	; CMP #';'
 D006	; BNE +6
 20 &C	; JSR skip_comment
 4C &L	; JMP loop
