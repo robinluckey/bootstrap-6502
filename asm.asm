@@ -1,10 +1,10 @@
-;*=1000
+*1000
 
 	; Forward jump to last instruction.
 	; The address must be calculated,
 	; then hand-copied here.
 	;
-4CE210	; JMP ????
+4CFD10	; JMP ????
 
 .N	; incr_loc
 	;
@@ -108,6 +108,16 @@ B9 &X	; LDA hex_digits,Y
 
 60	; RTS
 
+.O	; set_org
+	;
+20EEFF	; JSR getchar
+20 &R	; JSR parse_hex_byte
+8581	; STA 81	; MSB first
+20EEFF	; JSR getchar
+20 &R	; JSR parse_hex_byte
+8580	; STA 80	; 16-bit location counter
+60	; RTS
+
 .I	; init
 	;
 A900	; LDA #00
@@ -130,6 +140,11 @@ C90A	; CMP #'\n'
 F0EC	; BEQ loop	; -20
 	;
 	;		; switch on pseudo-op
+C9 "*"	; CMP #'*'
+D006	; BNE +6
+20 &O	; JSR set_org
+4C &L	; JMP loop
+	;
 C9 "."	; CMP #'.'
 D006	; BNE +6
 20 &D	; JSR define_label
