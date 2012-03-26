@@ -4,7 +4,7 @@
 	; The address must be calculated,
 	; then hand-copied here.
 	;
-4CFD10	; JMP ????
+4C3711	; JMP ????
 
 .N	; incr_loc
 	;
@@ -24,7 +24,7 @@ D0F9	; BNE -7
 	;
 20EEFF	; JSR getchar
 18	; CLC
-69B9	; ADC #B9	; 'A'-'Z' -> 0...
+69BF	; ADC #B9	; 'A'-'Z' -> 0...
 0A	; ASL A		; sizeof(label) = 2
 AA	; TAX
 A580	; LDA 80	; location counter
@@ -37,7 +37,7 @@ A581	; LDA 81
 	;
 20EEFF	; JSR getchar
 18	; CLC
-69B9	; ADC #B9	; 'A'-'Z' -> 0...
+69BF	; ADC #B9	; 'A'-'Z' -> 0...
 0A	; ASL A		; sizeof(label) = 2
 AA	; TAX
 B520	; LDA 20,X
@@ -47,6 +47,68 @@ B521	; LDA 21,X
 20DDFF	; JSR putchar
 20 &N	; JSR incr_loc
 60	; RTS
+
+.X	; hex_digits
+	;
+	"0123456789ABCDEF"
+
+.P	; printhex
+	;
+AA	; TAX		; backup
+4A	; LSR A		; high order nibble
+4A	; LSR A
+4A	; LSR A
+4A	; LSR A
+A8	; TAY		; lookup hex char
+18	; CLC
+B9 &X	; LDA hex_digits,Y
+20DDFF	; JSR putchar
+
+8A	; TXA		; restore
+290F	; AND #0F	; low order nibble
+A8	; TAY		; lookup hex char
+18	; CLC
+B9 &X	; LDA hex_digits,Y
+20DDFF	; JSR putchar
+
+60	; RTS
+
+.Y	; print_symbol_table
+	;
+A200	; LDX #00
+	;
+.Z	;
+	;
+A9 "*"	; LDA #"*"
+20DDFF	; JSR putchar
+B521	; LDA 21,X
+DA	; PHX
+20 &P	; JSR printhex
+FA	; PLX
+B520	; LDA 20,X
+DA	; PHX
+20 &P	; JSR printhex
+FA	; PLX
+A9 " "	; LDA #" "
+20DDFF	; JSR putchar
+	;
+A9 "."	; LDA #"."
+20DDFF	; JSR putchar
+8A	; TXA
+4A	; LSR A
+18	; CLC
+6941	; ADC #41	; 0... -> 'A'-'Z'
+20DDFF	; JSR putchar
+A90A	; LDA #"\n"
+20DDFF	; JSR putchar
+	;
+E8	; INX
+E8	; INX
+8A	; TXA
+C934	; CMP #34
+D001	; BNE +1
+60	; RTS
+4C &Z	; JMP &Z
 
 .S	; string_literal
 	;
@@ -83,31 +145,6 @@ C93A	; CMP #3A
 0510	; ORA 10
 60	; RTS
 
-.X	; hex_digits
-	;
-	"0123456789ABCDEF"
-
-.P	; printhex
-	;
-AA	; TAX		; backup
-4A	; LSR A		; high order nibble
-4A	; LSR A
-4A	; LSR A
-4A	; LSR A
-A8	; TAY		; lookup hex char
-18	; CLC
-B9 &X	; LDA hex_digits,Y
-20DDFF	; JSR putchar
-
-8A	; TXA		; restore
-290F	; AND #0F	; low order nibble
-A8	; TAY		; lookup hex char
-18	; CLC
-B9 &X	; LDA hex_digits,Y
-20DDFF	; JSR putchar
-
-60	; RTS
-
 .O	; set_org
 	;
 20EEFF	; JSR getchar
@@ -129,15 +166,16 @@ A910	; LDA #10
 	;
 20EEFF	; JSR getchar
 C9FF	; CMP #FF	; EOF?
-D001	; BNE +1
+D004	; BNE +4
+20 &Y	; JSR print_symbol_table
 00	; BRK
 	;
 C9 " "	; CMP #' '	; skip white space
-F0F4	; BEQ loop	; -12
+F0F1	; BEQ loop	; -15
 C909	; CMP #'\t'
-F0F0	; BEQ loop	; -16
+F0FD	; BEQ loop	; -19
 C90A	; CMP #'\n'
-F0EC	; BEQ loop	; -20
+F0E9	; BEQ loop	; -23
 	;
 	;		; switch on pseudo-op
 C9 "*"	; CMP #'*'
