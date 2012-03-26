@@ -1,11 +1,6 @@
-P01
 *1000
 
-	; Forward jump to last instruction.
-	; The address must be calculated,
-	; then hand-copied here.
-	;
-4C7411	; JMP ????
+4C &I	; JMP init
 
 .N	; incr_loc
 	;
@@ -250,7 +245,3 @@ D006	; BNE +6
 20 &N	; JSR incr_loc
 	;
 4C &L	; JMP loop
-
-	;-------------------------------------------------
-4C &I	; JMP init	; Placed at end of file for
-			; ease in computing address.
