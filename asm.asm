@@ -1,10 +1,11 @@
+P01
 *1000
 
 	; Forward jump to last instruction.
 	; The address must be calculated,
 	; then hand-copied here.
 	;
-4C3711	; JMP ????
+4C6811	; JMP ????
 
 .N	; incr_loc
 	;
@@ -74,6 +75,16 @@ B9 &X	; LDA hex_digits,Y
 60	; RTS
 
 .Y	; print_symbol_table
+	;
+A90A	; LDA #"\n"
+20DDFF	; JSR putchar
+A9 "P"	; LDA #"P"
+20DDFF	; JSR putchar
+A901	; LDA #1
+20 &P	; JSR printhex
+A90A	; LDA #"\n"
+20DDFF	; JSR putchar
+	;
 	;
 A200	; LDX #00
 	;
@@ -155,27 +166,39 @@ C93A	; CMP #3A
 8580	; STA 80	; 16-bit location counter
 60	; RTS
 
+.Q	; set_pass
+	;
+20EEFF	; JSR getchar
+20 &R	; JSR parse_hex_byte
+8582	; STA 82
+60	; RTS
+
 .I	; init
 	;
 A900	; LDA #00
 8580	; STA 80	; 16-bit location counter
 A910	; LDA #10
 8581	; STA 81
+A900	; LDA #00
+8582	; STA 82	; pass 0 by default
 
 .L	; loop
 	;
 20EEFF	; JSR getchar
 C9FF	; CMP #FF	; EOF?
-D004	; BNE +4
+D00A	; BNE +10
+A582	; LDA 82
+C900	; CMP #0
+D003	; BNE +3
 20 &Y	; JSR print_symbol_table
 00	; BRK
 	;
 C9 " "	; CMP #' '	; skip white space
-F0F1	; BEQ loop	; -15
+F0EB	; BEQ loop	; -21 -15
 C909	; CMP #'\t'
-F0ED	; BEQ loop	; -19
+F0E7	; BEQ loop	; -25 -19
 C90A	; CMP #'\n'
-F0E9	; BEQ loop	; -23
+F0E3	; BEQ loop	; -29 -23
 	;
 	;		; switch on pseudo-op
 C9 "*"	; CMP #'*'
@@ -201,6 +224,11 @@ D006	; BNE +6
 C9 ";"	; CMP #';'
 D006	; BNE +6
 20 &C	; JSR skip_comment
+4C &L	; JMP loop
+	;
+C9 "P"	; CMP #'P'
+D006	; BNE +6
+20 &Q	; JSR set_pass
 4C &L	; JMP loop
 	;
 	;		; no pseudo-op; emit raw byte
