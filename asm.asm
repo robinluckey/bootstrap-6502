@@ -173,7 +173,7 @@ D004	; BNE +4
 C9 " "	; CMP #' '	; skip white space
 F0F1	; BEQ loop	; -15
 C909	; CMP #'\t'
-F0FD	; BEQ loop	; -19
+F0ED	; BEQ loop	; -19
 C90A	; CMP #'\n'
 F0E9	; BEQ loop	; -23
 	;
