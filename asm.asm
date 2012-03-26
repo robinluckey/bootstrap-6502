@@ -5,7 +5,7 @@ P01
 	; The address must be calculated,
 	; then hand-copied here.
 	;
-4C6811	; JMP ????
+4C7411	; JMP ????
 
 .N	; incr_loc
 	;
@@ -19,6 +19,18 @@ E681	; INC 81
 20EEFF	; JSR FFEE	; getchar()
 C90A	; CMP #'\n'
 D0F9	; BNE -7
+60	; RTS
+
+.M	; emit		; putchar if pass 1
+	;
+48	; PHA
+A582	; LDA 82
+C901	; CMP #1
+D005	; BNE +5
+68	; PLA
+20DDFF	; JSR putchar
+60	; RTS
+68	; PLA
 60	; RTS
 
 .D	; define_label
@@ -42,10 +54,10 @@ A581	; LDA 81
 0A	; ASL A		; sizeof(label) = 2
 AA	; TAX
 B520	; LDA 20,X
-20DDFF	; JSR putchar
+20 &M	; JSR emit
 20 &N	; JSR incr_loc
 B521	; LDA 21,X
-20DDFF	; JSR putchar
+20 &M	; JSR emit
 20 &N	; JSR incr_loc
 60	; RTS
 
@@ -127,7 +139,7 @@ D001	; BNE +1
 C922	; CMP #'"'
 D001	; BNE +1
 60	; RTS
-20DDFF	; JSR putchar
+20 &M	; JSR emit
 20 &N	; JSR incr_loc
 4C &S	; JMP string_literal
 
@@ -234,7 +246,7 @@ D006	; BNE +6
 	;		; no pseudo-op; emit raw byte
 	;
 20 &R	; JSR parse_hex_byte
-20DDFF	; JSR putchar
+20 &M	; JSR emit
 20 &N	; JSR incr_loc
 	;
 4C &L	; JMP loop
