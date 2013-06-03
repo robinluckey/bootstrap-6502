@@ -221,7 +221,7 @@ D006	; BNE +6
 C9 "&"	; CMP #'&'
 D006	; BNE +6
 20 &E	; JSR eval_label
-4C &L	; JMP loop 
+4C &L	; JMP loop
 	;
 C922	; CMP #'"'
 D006	; BNE +6
