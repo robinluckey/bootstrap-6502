@@ -93,8 +93,6 @@ B9 &X	; LDA hex_digits,Y
 
 .Y	; print_symbol_table
 	;
-A90A	; LDA #"\n"
-20DDFF	; JSR putchar
 A9 "P"	; LDA #"P"
 20DDFF	; JSR putchar
 A901	; LDA #1
