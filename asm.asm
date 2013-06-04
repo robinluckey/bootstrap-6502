@@ -66,6 +66,30 @@ B521	; LDA 21,X
 20 &N	; JSR incr_loc
 60	; RTS
 
+.G	; lo_byte -- eval_label, but emit low byte only
+	;
+20EEFF	; JSR getchar
+18	; CLC
+69BF	; ADC #BF	; 'A'-'Z' -> 0...
+0A	; ASL A		; sizeof(label) = 2
+AA	; TAX
+B520	; LDA 20,X
+20 &M	; JSR emit
+20 &N	; JSR incr_loc
+60	; RTS
+
+.H	; hi_byte -- eval_label, but emit high byte only
+	;
+20EEFF	; JSR getchar
+18	; CLC
+69BF	; ADC #BF	; 'A'-'Z' -> 0...
+0A	; ASL A		; sizeof(label) = 2
+AA	; TAX
+B521	; LDA 21,X
+20 &M	; JSR emit
+20 &N	; JSR incr_loc
+60	; RTS
+
 .X	; hex_digits
 	;
 	"0123456789ABCDEF"
@@ -246,6 +270,16 @@ D006	; BNE +6
 C9 "&"	; CMP #'&'
 D006	; BNE +6
 20 &E	; JSR eval_label
+4C &L	; JMP loop
+	;
+C9 ">"	; CMP #'>'
+D006	; BNE +6
+20 &H	; JSR hi_byte
+4C &L	; JMP loop
+	;
+C9 "<"	; CMP #'<'
+D006	; BNE +6
+20 &G	; JSR lo_byte
 4C &L	; JMP loop
 	;
 C922	; CMP #'"'
