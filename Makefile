@@ -22,3 +22,8 @@ promote : g1
 %.img : %.asm
 	cat $< | cmd/run asm > $(basename $@).sym
 	cat $(basename $@).sym $< | cmd/run asm > $@
+
+EXAMPLES_SRC=$(shell ls examples/*.asm)
+EXAMPLES_IMG=$(shell ls examples/*.asm | sed 's/.asm/.img/')
+
+examples : $(EXAMPLES_IMG)
