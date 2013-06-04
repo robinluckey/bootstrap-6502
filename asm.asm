@@ -1,3 +1,13 @@
+;	global variables
+;
+;	20-21	label A
+;	22-23	label B
+;	...
+;	32-33	label Z
+;
+;	80-81	location counter
+;	82	assembly pass (0 or 1)
+
 *1000
 
 4C &I	; JMP init
@@ -13,7 +23,7 @@ E681	; INC 81
 	;
 20EEFF	; JSR FFEE	; getchar()
 C90A	; CMP #'\n'
-D0F9	; BNE -7
+D0 -07	; BNE -7
 60	; RTS
 
 .M	; emit		; putchar if pass 1
@@ -32,7 +42,7 @@ D005	; BNE +5
 	;
 20EEFF	; JSR getchar
 18	; CLC
-69BF	; ADC #B9	; 'A'-'Z' -> 0...
+69BF	; ADC #BF	; 'A'-'Z' -> 0...
 0A	; ASL A		; sizeof(label) = 2
 AA	; TAX
 A580	; LDA 80	; location counter
@@ -45,7 +55,7 @@ A581	; LDA 81
 	;
 20EEFF	; JSR getchar
 18	; CLC
-69BF	; ADC #B9	; 'A'-'Z' -> 0...
+69BF	; ADC #BF	; 'A'-'Z' -> 0...
 0A	; ASL A		; sizeof(label) = 2
 AA	; TAX
 B520	; LDA 20,X
@@ -115,7 +125,7 @@ A9 "."	; LDA #"."
 8A	; TXA
 4A	; LSR A
 18	; CLC
-6941	; ADC #41	; 0... -> 'A'-'Z'
+6941	; ADC #41	; 0..25 -> 'A'-'Z'
 20DDFF	; JSR putchar
 A90A	; LDA #"\n"
 20DDFF	; JSR putchar
@@ -138,14 +148,31 @@ D001	; BNE +1
 20 &N	; JSR incr_loc
 4C &S	; JMP string_literal
 
+.T	; twos_complement
+	;
+	; Read a hex byte from stdin, then emit
+	; the negation of that byte.
+	;
+20EEFF	; JSR getchar
+20 &R	; JSR parse_hex_byte
+49FF	; EOR #FF
+18	; CLC
+6901	; ADC #1
+20 &M	; JSR emit
+20 &N	; JSR incr_loc
+60	; RTS
 
 .R	; parse_hex_byte
+	;
+	; Assumes that the first char is already in A.
+	; Reads the second char from stdin, then returns
+	; the byte value in A.
 	;
 	; hi nibble
 	;
 C93A	; CMP #3A
 9002	; BCC .+2
-69F8	; ADC #F8	
+69F8	; ADC #F8
 290F	; AND #0F
 0A	; ASL A
 0A	; ASL A
@@ -158,7 +185,7 @@ C93A	; CMP #3A
 20EEFF	; JSR getchar
 C93A	; CMP #3A
 9002	; BCC .+2
-69F8	; ADC #F8	
+69F8	; ADC #F8
 290F	; AND #0F
 0510	; ORA 10
 60	; RTS
@@ -236,6 +263,11 @@ D006	; BNE +6
 C9 "P"	; CMP #'P'
 D006	; BNE +6
 20 &Q	; JSR set_pass
+4C &L	; JMP loop
+	;
+C9 "-"	; CMP #'-'
+D006	; BNE +6
+20 &T	; JSR twos_complement
 4C &L	; JMP loop
 	;
 	;		; no pseudo-op; emit raw byte
