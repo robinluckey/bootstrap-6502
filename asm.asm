@@ -69,6 +69,42 @@
 	20 @incr_loc	; JSR incr_loc
 	60		; RTS
 
+:read_var		; Reads a variable name from stdin and stores it in buffer .A.
+			; Variable name will be offset by 2 bytes to match vtable records.
+			;
+	A9 <A		; LDA #lo(buf)
+	8502		; STA pbuf
+	A9 >A		; LDA #hi(buf)
+	8503		; STA pbuf+1
+	A002		; LDY #2	; Note 2-byte offset
+:read_var_loop
+	20 @getchar	; JSR getchar
+	C9 " "		; CMP #' '
+	F00E		; BEQ read_var_end
+	C909		; CMP #'\t'
+	F00A		; BEQ read_var_end
+	C90A		; CMP #'\n'
+	F006		; BEQ read_var_end
+	9102		; STA (pbuf),Y
+	C8		; INY
+	D0 -14		; BNE read_var_loop
+	00		; BRK		; error -- variable name too long
+:read_var_end
+	A900		; LDA #0	; null terminate input buffer
+	9102		; STA (pbuf),Y
+	60		; RTS
+
+:seek_var
+			; Finds or creates a variable name in the vtable.
+			;
+			; Variable name to be matched must be stored in buffer A.
+			;
+			; Upon return, 00-01 will contain pointer into vtable.
+			; Address 02-03 will be used as temp pointer into buffer A.
+			;
+			; If the variable is not found, it will be created. A new
+			; record will be appended to the end of the vtable.
+
 :defvar
 			; The symbol table is a packed array of records:
 			;
@@ -207,31 +243,12 @@
 	E601		; INC 01
 	4C @pv_loop	; JMP
 
-0000 0000 0000
-
 :getvar
 	; reads variable name from stdin, emits its value to stdout
 	;
 	; 00-01: (pv)   iteration pointer into vtable
 	; 02-03: (pbuf) iteration pointer into input buffer
-	A9 <A		; LDA #lo(buf)
-	8502		; STA pbuf
-	A9 >A		; LDA #hi(buf)
-	8503		; STA pbuf+1
-	A002		; LDY #2	; load input buffer.
-			;		; Note 2-byte offset to match vtable records
-:getvar_read
-	20 @getchar	; JSR getchar
-	C9 " "		; CMP #' '
-	F00E		; BEQ getvar_search
-	C909		; CMP #'\t'
-	F00A		; BEQ getvar_search
-	C90A		; CMP #'\n'
-	F006		; BEQ getvar_search
-	9102		; STA (pbuf),Y
-	C8		; INY
-	D0 -14		; BNE getvar_read
-	00		; BRK		; error -- variable name too long
+	20 @read_var	; JSR read_var
 :getvar_search				; find matching name in table
 	A582		; LDA 82	; if it's pass 0, just accept input and ignore
 	C900		; CMP #0
@@ -239,9 +256,6 @@
 	20 @incr_loc	; JSR incr_loc
 	20 @incr_loc	; JSR incr_loc
 	60		; RTS
-
-	A900		; LDA #0	; null terminate input buffer
-	9102		; STA (pbuf),Y
 
 	A9 <V		; LDA #lo(vtable); begin at top of vtable
 	8500		; STA pv
