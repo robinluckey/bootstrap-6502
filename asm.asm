@@ -9,7 +9,8 @@
 ;	82	assembly pass (0 or 1)
 ;	84-85   vnext -- pointer to next available variable-length symbol table entry
 
-*2000	.V	; vtable -- variable-length symbol table
+*2000	.A	; general-purpose string buffer
+*3000	.V	; vtable -- variable-length symbol table
 
 *1000
 
@@ -69,7 +70,7 @@ B521	; LDA 21,X
 20 &N	; JSR incr_loc
 60	; RTS
 
-.U	; define variable-length symbol
+.U	; define_variable
 	;
 	; The symbol table is a packed array of records:
 	;
@@ -221,6 +222,89 @@ C8	; INY		; update temp pointer to next element
 E601	; INC 01
 4C &B	; JMP .loop
 
+0000 0000 0000
+
+.K	; lookup_variable						;112F
+	;
+	; reads variable name from stdin, emits its value to stdout
+	;
+	; 00-01: (pv)   iteration pointer into vtable
+	; 02-03: (pbuf) iteration pointer into input buffer
+	;
+A9 <A	; LDA #lo(buf)
+8502	; STA pbuf
+A9 >A	; LDA #hi(buf)
+8503	; STA pbuf+1
+	;
+A002	; LDY #2	; load input buffer.
+	;		; Note 2-byte offset to match vtable records
+	; .loop								; 1139
+20EEFF	; JSR getchar
+C9 " "	; CMP #' '
+F00E	; BEQ .search
+C909	; CMP #'\t'
+F00A	; BEQ .search
+C90A	; CMP #'\n'
+F006	; BEQ .search
+9102	; STA (pbuf),Y
+C8	; INY
+D0 -14	; BNE .loop
+00	; BRK		; error -- variable name too long
+	;
+	; .search	; find matching name in table			; 114E
+	;
+A900	; LDA #0	; null terminate input buffer
+9102	; STA (pbuf),Y
+	;
+A9 <V	; LDA #lo(vtable); begin at top of vtable
+8500	; STA pv
+A9 >V	; LDA #hi(vtable)
+8501	; STA pv+1
+	;
+.J	;								; 115A
+A002	; LDY #2	; variable name begins after 2-byte address
+B100	; LDA (pv),Y
+D102	; CMP (pbuf),Y
+D008	; BNE .skip
+C900	; CMP #0	; end of name -> successful match
+F022	; BEQ .found
+C8	; INY
+D0 -0D	; BNE
+00	; BRK		; error -- variable name too long
+	;
+	; .skip								; 116A
+B100	; LDA (pv),Y	; find end of variable in table
+C8	; INY
+C900	; CMP #0
+D0 -07	; BNE .skip
+	;
+	; .next		; move pv to next variable in vtable		; 1171
+98	; TYA
+18	; CLC
+6500	; ADC 00
+8500	; STA 00
+9002	; BCC +2
+E601	; INC 01
+	;
+A500	; LDA 00	; at end of vtable?
+C584	; CMP vnext
+D0 -27	; BNE &J
+A501	; LDA 01
+C585	; CMP nvext+1
+D0 -2D	; BNE &J
+00	; BRK		; error -- variable not found
+	;
+	; .found							; 1189
+A000	; LDY #00	; vtable record lo address
+B100	; LDA (pv),Y
+20 &M	; JSR emit
+20 &N	; JSR incr_loc
+A001	; LDY #01	; vtable record hi address
+B100	; LDA (pv),Y
+20 &M	; JSR emit
+20 &N	; JSR incr_loc
+60	; RTS
+
 .Y	; print_symbol_table
 	;
 A9 "P"	; LDA #"P"
@@ -229,7 +313,6 @@ A901	; LDA #1
 20 &P	; JSR printhex
 A90A	; LDA #"\n"
 20DDFF	; JSR putchar
-	;
 	;
 A200	; LDX #00
 	;
@@ -337,9 +420,9 @@ C93A	; CMP #3A
 
 .I	; init
 	;
-A9 <V	; LDA #00
+A9 <V	; LDA lo(vtable)
 8584	; STA 84	; initialize variable symbol table pointer
-A9 >V	; LDA #10
+A9 >V	; LDA hi(vtable)
 8585	; STA 85
 A900	; LDA #00
 8582	; STA 82	; pass 0 by default
@@ -348,19 +431,20 @@ A900	; LDA #00
 	;
 20EEFF	; JSR getchar
 C9FF	; CMP #FF	; EOF?
-D00A	; BNE +10
+D00D	; BNE +13
 A582	; LDA 82
 C900	; CMP #0
-D003	; BNE +3
+D006	; BNE +6
 20 &Y	; JSR print_symbol_table
+20 &W	; JSR print_variable_table
 00	; BRK
 	;
 C9 " "	; CMP #' '	; skip white space
-F0EB	; BEQ loop	; -21 -15
+F0 -18	; BEQ loop
 C909	; CMP #'\t'
-F0E7	; BEQ loop	; -25 -19
+F0 -1C	; BEQ loop
 C90A	; CMP #'\n'
-F0E3	; BEQ loop	; -29 -23
+F0 -20	; BEQ loop
 	;
 	;		; switch on pseudo-op
 C9 "*"	; CMP #'*'
@@ -413,9 +497,9 @@ D006	; BNE +6
 20 &U	; JSR define_variable
 4C &L	; JMP loop
 	;
-C9 "?"	; CMP #'?'
+C9 "@"	; CMP #'@'
 D006	; BNE +6
-20 &W	; JSR print_variables
+20 &K	; JSR lookup_variable
 4C &L	; JMP loop
 	;
 	;		; no pseudo-op; emit raw byte
