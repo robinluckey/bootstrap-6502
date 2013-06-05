@@ -253,6 +253,13 @@ D0 -14	; BNE .loop
 	;
 	; .search	; find matching name in table			; 114E
 	;
+A582	; LDA 82	; if it's pass 0, just accept input and ignore
+C900	; CMP #0
+D007	; BNE +7
+20 &N	; JSR incr_loc
+20 &N	; JSR incr_loc
+60	; RTS
+	;
 A900	; LDA #0	; null terminate input buffer
 9102	; STA (pbuf),Y
 	;
