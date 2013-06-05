@@ -7,6 +7,9 @@
 ;
 ;	80-81	location counter
 ;	82	assembly pass (0 or 1)
+;	84-85   vnext -- pointer to next available variable-length symbol table entry
+
+*2000	.V	; vtable -- variable-length symbol table
 
 *1000
 
@@ -66,6 +69,49 @@ B521	; LDA 21,X
 20 &N	; JSR incr_loc
 60	; RTS
 
+.U	; define variable-length symbol
+	;
+	; The symbol table is a packed array of records:
+	;
+	;	2 bytes: value (memory address)
+	;	n bytes: string name
+	;	1 byte:  0 terminator
+	;
+A000	; LDY #00
+	;
+A580	; LDA 80	; store location counter value
+9184	; STA (vnext),Y
+C8	; INY
+A581	; LDA 81
+9184	; STA (vnext),Y
+C8	; INY
+	;
+	; .loop		; read and store variable name
+20EEFF	; JSR getchar
+C90A	; CMP #'\n'
+F00E	; BEQ .term
+C909	; CMP #'\t'
+F00A	; BEQ .term
+C9 " "	; CMP #' '
+F006	; BEQ .term
+9184	; STA (vnext),Y
+C8	; INY
+D0 -14	; BNE .loop
+00	; BRK		; error -- variable name too long
+	;
+	; .term		; null terminate variable name
+A900	; LDA #00
+9184	; STA (vnext),Y
+C8	; INY
+	;
+98	; TYA		; update vnext
+18	; CLC
+6584	; ADC 84
+8584	; STA 84
+9002	; BCC +2
+E685	; INC 85
+60	; RTS
+
 .G	; lo_byte -- eval_label, but emit low byte only
 	;
 20EEFF	; JSR getchar
@@ -114,6 +160,66 @@ B9 &X	; LDA hex_digits,Y
 20DDFF	; JSR putchar
 
 60	; RTS
+
+.W	; print_variables
+	;
+A9 "P"	; LDA #"P"
+20DDFF	; JSR putchar
+A901	; LDA #1
+20 &P	; JSR printhex
+A90A	; LDA #"\n"
+20DDFF	; JSR putchar
+	;
+A9 <V	; LDA lo(vtable)
+8500	; STA 00	; 00-01: temp pointer into vtable
+A9 >V	; LDA hi(vtable)
+8501	; STA 01
+	;
+.B	; .loop
+A500	; LDA 00	; at end of vtable?
+C584	; CMP lo(vnext)
+D007	; BNE +7
+A501	; LDA 01
+C585	; CMP hi(vnext)
+D001	; BNE +1
+60	; RTS
+	;
+A9 "*"	; LDA #"*"
+20DDFF	; JSR putchar
+A001	; LDY #01	; print address -- high byte first!
+B100	; LDA (00),Y
+20 &P	; JSR printhex
+A000	; LDY #00
+B100	; LDA (00),Y
+20 &P	; JSR printhex
+	;
+A9 " "	; LDA #" "
+20DDFF	; JSR putchar
+A9 ":"	; LDA #":"
+20DDFF	; JSR putchar
+	;
+A002	; LDY #02
+	; .print_name_loop
+B100	; LDA (00),Y
+C900	; CMP #0
+F007	; BEQ .end_of_name
+20DDFF	; JSR putchar
+C8	; INY
+D0 -0C	; BNE .print_name_loop
+00	; BRK		; error -- variable name too long
+	;
+	; .end_of_name
+A90A	; LDA #"\n"
+20DDFF	; JSR putchar
+	;
+C8	; INY		; update temp pointer to next element
+98	; TYA
+18	; CLC
+6500	; ADC 00
+8500	; STA 00
+9002	; BCC +2
+E601	; INC 01
+4C &B	; JMP .loop
 
 .Y	; print_symbol_table
 	;
@@ -231,10 +337,10 @@ C93A	; CMP #3A
 
 .I	; init
 	;
-A900	; LDA #00
-8580	; STA 80	; 16-bit location counter
-A910	; LDA #10
-8581	; STA 81
+A9 <V	; LDA #00
+8584	; STA 84	; initialize variable symbol table pointer
+A9 >V	; LDA #10
+8585	; STA 85
 A900	; LDA #00
 8582	; STA 82	; pass 0 by default
 
@@ -300,6 +406,16 @@ D006	; BNE +6
 C9 "-"	; CMP #'-'
 D006	; BNE +6
 20 &T	; JSR twos_complement
+4C &L	; JMP loop
+	;
+C9 ":"	; CMP #':'
+D006	; BNE +6
+20 &U	; JSR define_variable
+4C &L	; JMP loop
+	;
+C9 "?"	; CMP #'?'
+D006	; BNE +6
+20 &W	; JSR print_variables
 4C &L	; JMP loop
 	;
 	;		; no pseudo-op; emit raw byte
