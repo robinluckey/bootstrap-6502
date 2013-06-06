@@ -50,7 +50,7 @@
 	F007		; BEQ +7
 	9100		; STA (00),Y
 	C8		; INY
-	D0 -0C		; BNE gets_loop
+	D0 ~gets_loop	; BNE gets_loop
 			;		; fall through if out of bounds
 	A0FF		; LDY #FF	; terminate at max 256th byte
 			;		; append null terminator
@@ -69,7 +69,7 @@
 	60		; RTS
 	20 &putchar	; JSR putchar
 	C8		; INY
-	D0 -0D		; BNE puts_loop
+	D0 ~puts_loop	; BNE puts_loop
 	60		; RTS -- out of bounds
 
 :prompt	"What is your name?"

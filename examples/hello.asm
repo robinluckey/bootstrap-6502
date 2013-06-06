@@ -18,7 +18,7 @@
 	00		; BRK
 	20 &putchar	; JSR putchar
 	E8		; INX
-	4C &loop	; JMP loop
+	D0 ~loop	; BNE loop
 
 :hello					; 1012
 	"Hello, World!"

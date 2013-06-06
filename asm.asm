@@ -193,6 +193,28 @@
 :get_lo_end
 	60		; RTS
 
+:get_rel_var		; Same as get_var, but emits single-byte relative offset
+			; from current location (appropriate for branch instructions).
+			;
+			; Addresses 04-07 will be used for subtraction.
+			;
+	20 &read_var	; JSR read_var  ; sets 02-03 to variable name buffer
+	20 &incr_loc	; JSR incr_loc
+			;
+	A582		; LDA 82	; which pass?
+	C900		; CMP #0
+	D001		; BNE +1
+	60		; RTS
+			;
+	20 &seek_var	; JSR seek_var	; sets 00-01 to vtable record
+			;
+	A000		; LDY #00
+	B100		; LDA (pv),Y
+	38		; SEC		; compute (pv) - (loc), low byte only
+	E580		; SBC loc
+	20 &emit	; JSR emit
+	60		; RTS
+
 :set_var		; Reads a variable name from stdin, then writes an entry
 			; in the vtable using the current location counter as its value.
 			;
@@ -433,6 +455,11 @@
 	C9 "&"		; CMP #'&'
 	D006		; BNE +6
 	20 &get_var	; JSR get_var
+	4C &main_loop	; JMP
+			;
+	C9 "~"		; CMP #'~'
+	D006		; BNE +6
+	20 &get_rel_var	; JSR get_rel_var
 	4C &main_loop	; JMP
 			;
 			; no pseudo-op; emit raw byte
