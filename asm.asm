@@ -3,14 +3,9 @@
 
 ;	global variables
 ;
-;	20-21	label A
-;	22-23	label B
-;	...
-;	32-33	label Z
-;
-;	80-81	location counter
-;	82	assembly pass (0 or 1)
-;	84-85   vnext ; pointer to next available vtable entry
+;	80-81	:loc	; location counter
+;	82	:pass	; assembly pass (0 or 1)
+;	84-85   :vnext	; pointer to next available vtable entry
 
 *2000	:buf		; general-purpose string buffer
 *3000	:vtable		; variable-length symbol table
@@ -49,10 +44,10 @@
 ;	n bytes: name (variable length string)
 ;	1 byte:  0 terminator
 ;
-; The table begins at &V. The pointer vnext (84-85) always points to the first
+; The table begins at :vtable. The pointer :vnext (84-85) always points to the first
 ; empty byte beyond the end of the vtable.
 
-:read_var		; Reads a variable name from stdin and stores it in &A, offset
+:read_var		; Reads a variable name from stdin and stores it in :buf, offset
 			; by 2 bytes to match vtable records.
 			;
 	A9 <buf		; LDA #lo(buf)
@@ -79,7 +74,7 @@
 
 :seek_var
 			; Finds a named variable in the vtable.
-			; Variable name to be matched must be stored in buffer A.
+			; Variable name to be matched must be stored in :buf.
 			; Variable name should be offset by 2 bytes to match vtable records.
 			;
 			; If the variable is found, the return accumulator will be 1,
@@ -89,11 +84,11 @@
 			; and the pointer will be equal to vnext, beyond the end of the
 			; vtable. The caller may append a new value here.
 			;
-			; Addresses 02-03 will be used as temp pointer into buffer A.
+			; Addresses 02-03 will be used as temp pointer into :buf.
 			;
-	A9 <vtable		; LDA #lo(vtable); begin at top of vtable
+	A9 <vtable	; LDA #lo(vtable); begin at top of vtable
 	8500		; STA pv
-	A9 >vtable		; LDA #hi(vtable)
+	A9 >vtable	; LDA #hi(vtable)
 	8501		; STA pv+1
 	A9 <buf		; LDA #lo(buf)	; temp pointer into buffer A
 	8502		; STA pbuf
@@ -195,8 +190,6 @@
 
 :get_rel_var		; Same as get_var, but emits single-byte relative offset
 			; from current location (appropriate for branch instructions).
-			;
-			; Addresses 04-07 will be used for subtraction.
 			;
 	20 &read_var	; JSR read_var  ; sets 02-03 to variable name buffer
 	20 &incr_loc	; JSR incr_loc

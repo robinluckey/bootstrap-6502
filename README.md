@@ -10,7 +10,7 @@ it barely a language:
    source code must be contiguous. There is no linker.
 
  - A label can be assigned from the current 16-bit location counter using the `:`
-   pseudo-op. Labels are limited to a single upper-case letter.
+   pseudo-op.
 
  - The 16-bit value of a label can be inserted with the `&` pseudo-op.
 
@@ -21,7 +21,7 @@ it barely a language:
 
  - It can emit a symbol table to allow forward label references.
 
-A "minor" things that this assembler can _not_ yet do:
+A "minor" thing that this assembler can _not_ yet do:
 
  - It does not recognize any opcode mnemonics. All actual machine instructions
    must be entered as hex codes.
@@ -34,7 +34,7 @@ of the assembler is assembled by the previous.
 
 The original version of the assembler was a short length of hand-assembled hex
 code. This resulted in a tiny program which, when fed a string of its own hex
-machine code, could emit its own object code.
+source code, could emit its own object code.
 
 From this starting point, each tiny feature was implemented using the features
 already available: first came support for line breaks, then white space, then
