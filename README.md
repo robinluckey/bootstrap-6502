@@ -1,55 +1,24 @@
 # Bootstrapped 6502 Assembler
 
-This project is an extremely limited, self-assembling 6502 assembler.
+This is a fool's errand to bootstrap a complete 6502 assembler. I am doing
+this for fun, with no expectation that it will be useful for anything.
+The journey is the goal: to begin with (nearly) nothing, and to slowly craft
+a functioning assembler. I am indebted to Edmund Grimly Evans for his
+[detailed bootstrapping project description](http://homepage.ntlworld.com/edmund.grimley-evans/bcompiler.html),
+which is the original inspiration for this project.
 
-To call this an assembler is an overstatement. It accepts ASCII hex codes from
-`stdin`, and emits bytes on `stdout`. It offers a few minimal "features" that make
-it barely a language:
-
- - The location counter can be modified using the `*` pseudo-op, however all
-   source code must be contiguous. There is no linker.
-
- - A label can be assigned from the current 16-bit location counter using the `:`
-   pseudo-op.
-
- - The 16-bit value of a label can be inserted with the `&` pseudo-op.
-
- - An 8-bit relative offset to a label can be inserted with the `~` pseudo-op.
-
- - It supports comments, which must begin with `;` and end at the next newline
-   character.
-
- - It can emit a symbol table to allow forward label references.
-
-A "minor" thing that this assembler can _not_ yet do:
-
- - It does not recognize any opcode mnemonics. All actual machine instructions
-   must be entered as hex codes.
-
-## What's going on here?
-
-The journey is the goal: to start from a tiny seed of hand-assembled machine
-code, and from there to slowly develop a full 6502 assembler. Each new version
-of the assembler is assembled by the previous.
-
-The original version of the assembler was a short length of hand-assembled hex
+The original version of this assembler was a short length of hand-assembled hex
 code. This resulted in a tiny program which, when fed a string of its own hex
 source code, could emit its own object code.
 
 From this starting point, each tiny feature was implemented using the features
-already available: first came support for line breaks, then white space, then
-comments, then ASCII string literals, and most recently address labels.
-
-This is admittedly a fool's errand. I am indebted to Edmund Grimly Evans for
-inspiring me with his detailed bootstrapping project description:
-
-    http://homepage.ntlworld.com/edmund.grimley-evans/bcompiler.html
+already available: first came support for white space and line breaks, then
+comments, then string literals, and most recently address labels.
 
 ## Runtime environment
 
-I use Ian Piumarta's excellent lib6502 to emulate a 6502 computer:
-
-	  http://piumarta.com/software
+I use Ian Piumarta's excellent [lib6502](http://piumarta.com/software) to
+emulate a 6502 computer.
 
 `run6502` must be installed on the path.
 
@@ -81,6 +50,32 @@ Build and run the example program:
     $ cmd/run hello.img
     Hello, World!
 
+## Assembler Features
+
+To call this an assembler is an overstatement. It accepts ASCII hex codes from
+`stdin`, and emits bytes on `stdout`. It offers a few minimal "features" that
+make it barely a language:
+
+ - The location counter can be modified using the `*` pseudo-op, however all
+   source code must be contiguous and begin at 0x1000. There is no linker.
+
+ - A label can be assigned from the current 16-bit location counter using the
+   `:` pseudo-op.
+
+ - The 16-bit value of a label can be inserted with the `&` pseudo-op.
+
+ - An 8-bit relative offset to a label can be inserted with the `~` pseudo-op.
+
+ - It supports comments, which must begin with `;` and end at the next newline
+   character.
+
+ - It can emit a symbol table to allow forward label references.
+
+An important thing that this assembler can _not_ yet do:
+
+ - It does not recognize any opcode mnemonics. All actual machine instructions
+   must be entered as hex codes.
+
 ## Two-pass assembly process
 
 The assembler operates in two passes to provide support for forward label
@@ -101,8 +96,8 @@ to operate in pass 1 behavior.
 ## Two-generation compilation
 
 `asm.asm` is the assembler source code, written in our minimal assembly
-language, and `asm` is the reference master assembler object code. Both are held
-in source control.
+language, and `asm` is the reference master assembler object code. Both are
+held in source control.
 
 When compiling the assembler, the makefile will iterate two generations.
 
