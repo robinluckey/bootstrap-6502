@@ -12,8 +12,8 @@
 ;	82	assembly pass (0 or 1)
 ;	84-85   vnext ; pointer to next available vtable entry
 
-*2000	.A		; general-purpose string buffer
-*3000	.V		; vtable -- variable-length symbol table
+*2000	.A :buf		; general-purpose string buffer
+*3000	.V :vtable	; variable-length symbol table
 
 *1000
 
@@ -187,6 +187,38 @@
 :get_var_end
 	60		; RTS
 
+:get_hi			; Same as get_var, but emits hi byte only
+			;
+	20 @read_var	; JSR read_var  ; sets 02-03 to variable name buffer
+	20 @incr_loc	; JSR incr_loc
+			;
+	A582		; LDA 82	; which pass?
+	C900		; CMP #0
+	F00A		; BEQ get_hi_end
+			;
+	20 @seek_var	; JSR seek_var	; sets 00-01 to vtable record
+	A001		; LDY #01	; hi value
+	B100		; LDA (pv),Y
+	20 @emit	; JSR emit
+:get_hi_end
+	60		; RTS
+
+:get_lo			; Same as get_var, but emits lo byte only
+			;
+	20 @read_var	; JSR read_var  ; sets 02-03 to variable name buffer
+	20 @incr_loc	; JSR incr_loc
+			;
+	A582		; LDA 82	; which pass?
+	C900		; CMP #0
+	F00A		; BEQ get_lo_end
+			;
+	20 @seek_var	; JSR seek_var	; sets 00-01 to vtable record
+	A000		; LDY #00	; lo value
+	B100		; LDA (pv),Y
+	20 @emit	; JSR emit
+:get_lo_end
+	60		; RTS
+
 :set_var		; Reads a variable name from stdin, then writes an entry
 			; in the vtable using the current location counter as its value.
 			;
@@ -248,10 +280,6 @@
 	20 @emit	; JSR emit
 	20 @incr_loc	; JSR incr_loc
 	60		; RTS
-
-.X	; hex_digits
-	;
-	"0123456789ABCDEF"
 
 :printhex
 	AA		; TAX		; backup
@@ -464,6 +492,16 @@
 	20 @eval_label	; JSR
 	4C @main_loop	; JMP
 			;
+	C9 "]"		; CMP #'>'
+	D006		; BNE +6
+	20 @get_hi	; JSR get_hi
+	4C @main_loop	; JMP
+			;
+	C9 "["		; CMP #'['
+	D006		; BNE +6
+	20 @get_lo	; JSR get_lo
+	4C @main_loop	; JMP
+			;
 	C9 ">"		; CMP #'>'
 	D006		; BNE +6
 	20 @hi_byte	; JSR hi_byte
@@ -511,3 +549,7 @@
 	20 @incr_loc	; JSR incr_loc
 			;
 	4C @main_loop	; JMP
+
+.X :hex_digits
+	"0123456789ABCDEF"
+
