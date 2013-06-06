@@ -25,12 +25,109 @@
 *1000			; all programs must begin at $1000
 
 :main
-	4C &init	; JMP init
+
+:init
+	A9 <vtable	; LDA lo(vtable)
+	85 <vnextl	; STA vnextl
+	A9 >vtable	; LDA hi(vtable)
+	85 <vnexth	; STA vnexth
+	A900		; LDA #00	; pass 0 by default
+	85 <pass	; STA pass
+
+:main_loop
+	20 &getchar	; JSR getchar
+	C9FF		; CMP #FF	; EOF?
+	D00A		; BNE +10
+	A5 <pass	; LDA pass
+	C900		; CMP #0
+	D003		; BNE +3
+	20 &print_vtable ; JSR print_vtable
+	00		; BRK
+			;
+	C9 " "		; CMP #' '	; skip white space
+	F0 ~main_loop	; BEQ main_loop
+	C909		; CMP #'\t'
+	F0 ~main_loop	; BEQ main_loop
+	C90A		; CMP #'\n'
+	F0 ~main_loop	; BEQ main_loop
+			;		; switch on pseudo-op
+	C9 "*"		; CMP #'*'
+	D006		; BNE +6
+	20 &set_loc	; JSR set_loc
+	4C &main_loop	; JMP
+			;
+	C9 ">"		; CMP #'>'
+	D006		; BNE +6
+	20 &get_hi	; JSR get_hi
+	4C &main_loop	; JMP
+			;
+	C9 "<"		; CMP #'<'
+	D006		; BNE +6
+	20 &get_lo	; JSR get_lo
+	4C &main_loop	; JMP
+			;
+	C922		; CMP #'"'
+	D006		; BNE +6
+	20 &string_literal	; JSR string_literal
+	4C &main_loop	; JMP
+			;
+	C9 ";"		; CMP #';'
+	D006		; BNE +6
+	20 &skip_comment	; JSR skip_comment
+	4C &main_loop	; JMP
+			;
+	C9 "P"		; CMP #'P'
+	D006		; BNE +6
+	20 &set_pass	; JSR set_pass
+	4C &main_loop	; JMP
+			;
+	C9 "-"		; CMP #'-'
+	D006		; BNE +6
+	20 &twos_comp	; JSR twos_comp
+	4C &main_loop	; JMP
+			;
+	C9 ":"		; CMP #':'
+	D006		; BNE +6
+	20 &set_var	; JSR set_var
+	4C &main_loop	; JMP
+			;
+	C9 "&"		; CMP #'&'
+	D006		; BNE +6
+	20 &get_var	; JSR get_var
+	4C &main_loop	; JMP
+			;
+	C9 "~"		; CMP #'~'
+	D006		; BNE +6
+	20 &get_rel_var	; JSR get_rel_var
+	4C &main_loop	; JMP
+			;
+			; no pseudo-op; emit raw byte
+			;
+	20 &parse_hex_byte ; JSR parse_hex_byte
+	20 &emit	; JSR emit
+	20 &incr_loc	; JSR incr_loc
+			;
+	4C &main_loop	; JMP main_loop
+
+:set_loc
+	20 &getchar	; JSR getchar
+	20 &parse_hex_byte ; JSR parse_hex_byte
+	85 <loch	; STA loch	; MSB first
+	20 &getchar	; JSR getchar
+	20 &parse_hex_byte ; JSR parse_hex_byte
+	85 <locl	; STA locl
+	60		; RTS
 
 :incr_loc
 	E6 <locl	; INC locl
 	D002		; BNE +2
 	E6 <loch	; INC loch
+	60		; RTS
+
+:set_pass
+	20 &getchar	; JSR getchar
+	20 &parse_hex_byte ; JSR parse_hex_byte
+	85 <pass	; STA pass
 	60		; RTS
 
 :skip_comment
@@ -49,6 +146,71 @@
 	60		; RTS
 	68		; PLA
 	60		; RTS
+
+:string_literal
+	20 &getchar	; JSR getchar
+	C922		; CMP #'"'
+	D001		; BNE +1
+	60		; RTS
+	20 &emit	; JSR emit
+	20 &incr_loc	; JSR incr_loc
+	4C &string_literal ; JMP
+
+:twos_comp
+	; Read a hex byte from stdin, then emit
+	; the negation of that byte.
+	20 &getchar	; JSR getchar
+	20 &parse_hex_byte	; JSR parse_hex_byte
+	49FF		; EOR #FF
+	18		; CLC
+	6901		; ADC #1
+	20 &emit	; JSR emit
+	20 &incr_loc	; JSR incr_loc
+	60		; RTS
+
+:parse_hex_byte
+	; Assumes that the first char is already in A.
+	; Reads the second char from stdin, then returns
+	; the byte value in A.
+					; hi nibble
+	C93A		; CMP #3A
+	9002		; BCC +2
+	69F8		; ADC #F8
+	290F		; AND #0F
+	0A		; ASL A
+	0A		; ASL A
+	0A		; ASL A
+	0A		; ASL A
+	8510		; STA 10
+					; lo nibble
+	20 &getchar	; JSR getchar
+	C93A		; CMP #3A
+	9002		; BCC +2
+	69F8		; ADC #F8
+	290F		; AND #0F
+	0510		; ORA 10
+	60		; RTS
+
+:printhex
+	AA		; TAX		; backup
+	4A		; LSR A		; high order nibble
+	4A		; LSR A
+	4A		; LSR A
+	4A		; LSR A
+	A8		; TAY		; lookup hex char
+	18		; CLC
+	B9 &hex_digits	; LDA hex_digits,Y
+	20 &putchar	; JSR putchar
+	8A		; TXA		; restore
+	290F		; AND #0F	; low order nibble
+	A8		; TAY		; lookup hex char
+	18		; CLC
+	B9 &hex_digits	; LDA hex_digits,Y
+	20 &putchar	; JSR putchar
+	60		; RTS
+
+:hex_digits
+	"0123456789ABCDEF"
 
 ; The variable table (vtable) is a packed array of null-terminated records:
 ;
@@ -200,7 +362,8 @@
 	60		; RTS
 
 :get_rel_var		; Same as get_var, but emits single-byte relative offset
-			; from current location (appropriate for branch instructions).
+			; from current location (appropriate for branch
+			; instructions).
 			;
 	20 &read_var	; JSR read_var  ; fills buf, sets bufl
 	20 &incr_loc	; JSR incr_loc
@@ -259,25 +422,7 @@
 	E6 <vnexth		; INC 85
 	60		; RTS
 
-:printhex
-	AA		; TAX		; backup
-	4A		; LSR A		; high order nibble
-	4A		; LSR A
-	4A		; LSR A
-	4A		; LSR A
-	A8		; TAY		; lookup hex char
-	18		; CLC
-	B9 &hex_digits	; LDA hex_digits,Y
-	20 &putchar	; JSR putchar
-	8A		; TXA		; restore
-	290F		; AND #0F	; low order nibble
-	A8		; TAY		; lookup hex char
-	18		; CLC
-	B9 &hex_digits	; LDA hex_digits,Y
-	20 &putchar	; JSR putchar
-	60		; RTS
-
-:print_variable_table
+:print_vtable
 	A9 "P"		; LDA #"P"
 	20 &putchar	; JSR putchar
 	A901		; LDA #1
@@ -331,149 +476,4 @@
 	9002		; BCC +2
 	E6 <vcurh	; INC vcurh
 	4C &pv_loop	; JMP
-
-:string_literal
-	20 &getchar	; JSR getchar
-	C922		; CMP #'"'
-	D001		; BNE +1
-	60		; RTS
-	20 &emit	; JSR emit
-	20 &incr_loc	; JSR incr_loc
-	4C &string_literal ; JMP
-
-:twos_comp
-	; Read a hex byte from stdin, then emit
-	; the negation of that byte.
-	20 &getchar	; JSR getchar
-	20 &parse_hex_byte	; JSR parse_hex_byte
-	49FF		; EOR #FF
-	18		; CLC
-	6901		; ADC #1
-	20 &emit	; JSR emit
-	20 &incr_loc	; JSR incr_loc
-	60		; RTS
-
-:parse_hex_byte
-	; Assumes that the first char is already in A.
-	; Reads the second char from stdin, then returns
-	; the byte value in A.
-					; hi nibble
-	C93A		; CMP #3A
-	9002		; BCC +2
-	69F8		; ADC #F8
-	290F		; AND #0F
-	0A		; ASL A
-	0A		; ASL A
-	0A		; ASL A
-	0A		; ASL A
-	8510		; STA 10
-					; lo nibble
-	20 &getchar	; JSR getchar
-	C93A		; CMP #3A
-	9002		; BCC +2
-	69F8		; ADC #F8
-	290F		; AND #0F
-	0510		; ORA 10
-	60		; RTS
-
-:set_org
-	20 &getchar	; JSR getchar
-	20 &parse_hex_byte ; JSR parse_hex_byte
-	85 <loch	; STA loch	; MSB first
-	20 &getchar	; JSR getchar
-	20 &parse_hex_byte ; JSR parse_hex_byte
-	85 <locl	; STA locl
-	60		; RTS
-
-:set_pass
-	20 &getchar	; JSR getchar
-	20 &parse_hex_byte ; JSR parse_hex_byte
-	85 <pass	; STA pass
-	60		; RTS
-
-:init
-	A9 <vtable	; LDA lo(vtable)
-	85 <vnextl	; STA vnextl
-	A9 >vtable	; LDA hi(vtable)
-	85 <vnexth	; STA vnexth
-	A900		; LDA #00	; pass 0 by default
-	85 <pass	; STA pass
-
-:main_loop
-	20 &getchar	; JSR getchar
-	C9FF		; CMP #FF	; EOF?
-	D00A		; BNE +10
-	A5 <pass	; LDA pass
-	C900		; CMP #0
-	D003		; BNE +3
-	20 &print_variable_table ; JSR
-	00		; BRK
-			;
-	C9 " "		; CMP #' '	; skip white space
-	F0 ~main_loop	; BEQ main_loop
-	C909		; CMP #'\t'
-	F0 ~main_loop	; BEQ main_loop
-	C90A		; CMP #'\n'
-	F0 ~main_loop	; BEQ main_loop
-			;		; switch on pseudo-op
-	C9 "*"		; CMP #'*'
-	D006		; BNE +6
-	20 &set_org	; JSR set_org
-	4C &main_loop	; JMP
-			;
-	C9 ">"		; CMP #'>'
-	D006		; BNE +6
-	20 &get_hi	; JSR get_hi
-	4C &main_loop	; JMP
-			;
-	C9 "<"		; CMP #'<'
-	D006		; BNE +6
-	20 &get_lo	; JSR get_lo
-	4C &main_loop	; JMP
-			;
-	C922		; CMP #'"'
-	D006		; BNE +6
-	20 &string_literal	; JSR string_literal
-	4C &main_loop	; JMP
-			;
-	C9 ";"		; CMP #';'
-	D006		; BNE +6
-	20 &skip_comment	; JSR skip_comment
-	4C &main_loop	; JMP
-			;
-	C9 "P"		; CMP #'P'
-	D006		; BNE +6
-	20 &set_pass	; JSR set_pass
-	4C &main_loop	; JMP
-			;
-	C9 "-"		; CMP #'-'
-	D006		; BNE +6
-	20 &twos_comp	; JSR twos_comp
-	4C &main_loop	; JMP
-			;
-	C9 ":"		; CMP #':'
-	D006		; BNE +6
-	20 &set_var	; JSR set_var
-	4C &main_loop	; JMP
-			;
-	C9 "&"		; CMP #'&'
-	D006		; BNE +6
-	20 &get_var	; JSR get_var
-	4C &main_loop	; JMP
-			;
-	C9 "~"		; CMP #'~'
-	D006		; BNE +6
-	20 &get_rel_var	; JSR get_rel_var
-	4C &main_loop	; JMP
-			;
-			; no pseudo-op; emit raw byte
-			;
-	20 &parse_hex_byte ; JSR parse_hex_byte
-	20 &emit	; JSR emit
-	20 &incr_loc	; JSR incr_loc
-			;
-	4C &main_loop	; JMP
-
-:hex_digits
-	"0123456789ABCDEF"
 
