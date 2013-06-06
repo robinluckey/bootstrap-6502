@@ -12,8 +12,8 @@
 ;	82	assembly pass (0 or 1)
 ;	84-85   vnext ; pointer to next available vtable entry
 
-*2000	.A :buf		; general-purpose string buffer
-*3000	.V :vtable	; variable-length symbol table
+*2000	:buf		; general-purpose string buffer
+*3000	:vtable	; variable-length symbol table
 
 *1000
 
@@ -81,9 +81,9 @@
 :read_var		; Reads a variable name from stdin and stores it in &A, offset
 			; by 2 bytes to match vtable records.
 			;
-	A9 <A		; LDA #lo(buf)
+	A9 [buf		; LDA #lo(buf)
 	8502		; STA pbuf
-	A9 >A		; LDA #hi(buf)
+	A9 ]buf		; LDA #hi(buf)
 	8503		; STA pbuf+1
 	A002		; LDY #2	; Note 2-byte offset
 :read_var_loop
@@ -117,13 +117,13 @@
 			;
 			; Addresses 02-03 will be used as temp pointer into buffer A.
 			;
-	A9 <V		; LDA #lo(vtable); begin at top of vtable
+	A9 [vtable		; LDA #lo(vtable); begin at top of vtable
 	8500		; STA pv
-	A9 >V		; LDA #hi(vtable)
+	A9 ]vtable		; LDA #hi(vtable)
 	8501		; STA pv+1
-	A9 <A		; LDA #lo(buf)	; temp pointer into buffer A
+	A9 [buf		; LDA #lo(buf)	; temp pointer into buffer A
 	8502		; STA pbuf
-	A9 >A		; LDA #hi(buf)
+	A9 ]buf		; LDA #hi(buf)
 	8503		; STA pbuf+1
 :seek_var_each
 	A500		; LDA pv	; reached end of vtable?
@@ -289,13 +289,13 @@
 	4A		; LSR A
 	A8		; TAY		; lookup hex char
 	18		; CLC
-	B9 &X		; LDA hex_digits,Y
+	B9 @hex_digits	; LDA hex_digits,Y
 	20 @putchar	; JSR putchar
 	8A		; TXA		; restore
 	290F		; AND #0F	; low order nibble
 	A8		; TAY		; lookup hex char
 	18		; CLC
-	B9 &X		; LDA hex_digits,Y
+	B9 @hex_digits	; LDA hex_digits,Y
 	20 @putchar	; JSR putchar
 	60		; RTS
 
@@ -307,9 +307,9 @@
 	A90A		; LDA #"\n"
 	20 @putchar	; JSR putchar
 			;
-	A9 <V		; LDA lo(vtable)
+	A9 [vtable	; LDA lo(vtable)
 	8500		; STA 00	; 00-01: temp pointer into vtable
-	A9 >V		; LDA hi(vtable)
+	A9 ]vtable	; LDA hi(vtable)
 	8501		; STA 01
 :pv_loop
 	A500		; LDA 00	; at end of vtable?
@@ -452,9 +452,9 @@
 	60		; RTS
 
 :init
-	A9 <V		; LDA lo(vtable)
+	A9 [vtable	; LDA lo(vtable)
 	8584		; STA pnext
-	A9 >V		; LDA hi(vtable)
+	A9 ]vtable	; LDA hi(vtable)
 	8585		; STA pnext+1
 	A900		; LDA #00	; pass 0 by default
 	8582		; STA pass
@@ -550,6 +550,6 @@
 			;
 	4C @main_loop	; JMP
 
-.X :hex_digits
+:hex_digits
 	"0123456789ABCDEF"
 
