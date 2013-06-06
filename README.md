@@ -2,28 +2,29 @@
 
 This project is an extremely limited, self-assembling 6502 assembler.
 
-To call this an assembler is an overstatment. It accepts ASCII hex codes from
+To call this an assembler is an overstatement. It accepts ASCII hex codes from
 `stdin`, and emits bytes on `stdout`. It offers a few minimal "features" that make
 it barely a language:
 
- - The location counter can be modified using the `*` pseudo-op.
+ - The location counter can be modified using the `*` pseudo-op, however all
+   source code must be contiguous. There is no linker.
 
- - A label can be assigned from the current 16-bit location counter using the `.`
+ - A label can be assigned from the current 16-bit location counter using the `:`
    pseudo-op. Labels are limited to a single upper-case letter.
 
- - The 16-bit value of an assigned label can be read with the `&` pseudo-op.
+ - The 16-bit value of a label can be inserted with the `&` pseudo-op.
+
+ - An 8-bit relative offset to a label can be inserted with the `~` pseudo-op.
 
  - It supports comments, which must begin with `;` and end at the next newline
    character.
 
  - It can emit a symbol table to allow forward label references.
 
-Some "minor" things that this assembler can _not_ yet do:
+A "minor" things that this assembler can _not_ yet do:
 
  - It does not recognize any opcode mnemonics. All actual machine instructions
    must be entered as hex codes.
-
- - It cannot calculate relative addresses for branch instructions.
 
 ## What's going on here?
 
@@ -31,7 +32,7 @@ The journey is the goal: to start from a tiny seed of hand-assembled machine
 code, and from there to slowly develop a full 6502 assembler. Each new version
 of the assembler is assembled by the previous.
 
-The original verison of the assembler was a short length of hand-assembled hex
+The original version of the assembler was a short length of hand-assembled hex
 code. This resulted in a tiny program which, when fed a string of its own hex
 machine code, could emit its own object code.
 
@@ -54,7 +55,7 @@ I use Ian Piumarta's excellent lib6502 to emulate a 6502 computer:
 
 The design assumes that the entire 16-bit address space represents available
 RAM, with the exception of the space above FFDD, which is reserved for
-lib6502's getchar() and putchar() subroutines.
+lib6502's getchar() and putchar() ROM subroutines.
 
 The assembler code is not relocatable, and assumes that it will be loaded at
 0x1000 and execution will begin there.
@@ -97,16 +98,13 @@ symbols, which now have all of their location values defined. Note that the
 symbol table also begins with the 'P01' psuedo-op, which signals the assembler
 to operate in pass 1 behavior.
 
-If a program does not rely on the assembler to generate a symbol table, it can
-include the 'P01' pseudo-op directly in its main source code to skip pass 0.
-
 ## Two-generation compilation
-
-When compiling the assembler, the makefile will iterate two generations.
 
 `asm.asm` is the assembler source code, written in our minimal assembly
 language, and `asm` is the reference master assembler object code. Both are held
 in source control.
+
+When compiling the assembler, the makefile will iterate two generations.
 
 The `make` process will first use `asm` to compile generation 0 object code as
 file `g0`. If this succeeds, it then uses `g0` to compile second-generation
