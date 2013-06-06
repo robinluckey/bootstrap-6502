@@ -29,7 +29,7 @@
 :skip_comment
 	20 &getchar	; JSR getchar
 	C90A		; CMP #'\n'
-	D0 -07		; BNE -7
+	D0 ~skip_comment ; BNE
 	60		; RTS
 
 :emit
@@ -63,14 +63,14 @@
 :read_var_loop
 	20 &getchar	; JSR getchar
 	C9 " "		; CMP #' '
-	F00E		; BEQ read_var_end
+	F0 ~read_var_end ; BEQ read_var_end
 	C909		; CMP #'\t'
-	F00A		; BEQ read_var_end
+	F0 ~read_var_end ; BEQ read_var_end
 	C90A		; CMP #'\n'
-	F006		; BEQ read_var_end
+	F0 ~read_var_end ; BEQ read_var_end
 	9102		; STA (pbuf),Y
 	C8		; INY
-	D0 -14		; BNE read_var_loop
+	D0 ~read_var_loop ; BNE read_var_loop
 	00		; BRK		; error -- variable name too long
 :read_var_end
 	A900		; LDA #0	; null terminate input buffer
@@ -102,10 +102,10 @@
 :seek_var_each
 	A500		; LDA pv	; reached end of vtable?
 	C584		; CMP vnext
-	D009		; BNE seek_var_cmp
+	D0 ~seek_var_cmp ; BNE seek_var_cmp
 	A501		; LDA pv+1
 	C585		; CMP vnext+1
-	D003		; BNE seek_var_cmp
+	D0 ~seek_var_cmp ; BNE seek_var_cmp
 	A900		; LDA #00	; variable does not exist
 	60		; RTS
 :seek_var_cmp
@@ -113,17 +113,17 @@
 :seek_var_cmp_loop
 	B100		; LDA (pv),Y
 	D102		; CMP (pbuf),Y
-	D008		; BNE seek_var_skip
+	D0 ~seek_var_skip ; BNE seek_var_skip
 	C900		; CMP #0	; reached end of name -> successful match
-	F018		; BEQ seek_var_found
+	F0 ~seek_var_found ; BEQ seek_var_found
 	C8		; INY
-	D0 -0D		; BNE seep_var_cmp_loop
+	D0 ~seek_var_cmp_loop ; BNE seep_var_cmp_loop
 	00		; BRK		; error -- variable name too long
 :seek_var_skip
 	B100		; LDA (pv),Y	; seek to end of unmatched name
 	C8		; INY
 	C900		; CMP #0
-	D0 -07		; BNE seek_var_skip
+	D0 ~seek_var_skip ; BNE seek_var_skip
 :seek_var_next
 	98		; TYA		; move pv to next variable in vtable
 	18		; CLC
@@ -149,7 +149,7 @@
 			;
 	A582		; LDA 82	; which pass?
 	C900		; CMP #0
-	F011		; BEQ get_var_end
+	F0 ~get_var_end	; BEQ get_var_end
 			;
 	20 &seek_var	; JSR seek_var	; sets 00-01 to vtable record
 	A000		; LDY #00	; lo value
@@ -168,7 +168,7 @@
 			;
 	A582		; LDA 82	; which pass?
 	C900		; CMP #0
-	F00A		; BEQ get_hi_end
+	F0 ~get_hi_end	; BEQ get_hi_end
 			;
 	20 &seek_var	; JSR seek_var	; sets 00-01 to vtable record
 	A001		; LDY #01	; hi value
@@ -184,7 +184,7 @@
 			;
 	A582		; LDA 82	; which pass?
 	C900		; CMP #0
-	F00A		; BEQ get_lo_end
+	F0 ~get_lo_end	; BEQ get_lo_end
 			;
 	20 &seek_var	; JSR seek_var	; sets 00-01 to vtable record
 	A000		; LDY #00	; lo value
@@ -238,7 +238,7 @@
 	B102		; LDA (pbuf),Y
 	9100		; STA (pv),Y
 	C900		; CMP #0
-	D0 -09		; BNE set_var_loop
+	D0 ~set_var_loop ; BNE set_var_loop
 			;
 			; If we have extended the vtable, we must update the end pointer.
 			;
@@ -311,10 +311,10 @@
 :pv_name_loop
 	B100		; LDA (00),Y
 	C900		; CMP #0
-	F007		; BEQ pv_end_of_name
+	F0 ~pv_end_of_name ; BEQ pv_end_of_name
 	20 &putchar	; JSR putchar
 	C8		; INY
-	D0 -0C		; BNE :pv_name_loop
+	D0 ~pv_name_loop ; BNE :pv_name_loop
 	00		; BRK		; error -- variable name too long
 :pv_end_of_name
 	A90A		; LDA #"\n"
@@ -406,11 +406,11 @@
 	00		; BRK
 			;
 	C9 " "		; CMP #' '	; skip white space
-	F0 -15		; BEQ loop
+	F0 ~main_loop	; BEQ main_loop
 	C909		; CMP #'\t'
-	F0 -19		; BEQ loop
+	F0 ~main_loop	; BEQ main_loop
 	C90A		; CMP #'\n'
-	F0 -1D		; BEQ loop
+	F0 ~main_loop	; BEQ main_loop
 			;		; switch on pseudo-op
 	C9 "*"		; CMP #'*'
 	D006		; BNE +6
