@@ -43,32 +43,6 @@
 	68		; PLA
 	60		; RTS
 
-:define_label
-	20 @getchar	; JSR getchar
-	18		; CLC
-	69BF		; ADC #BF	; 'A'-'Z' -> 0...
-	0A		; ASL A		; sizeof(label) = 2
-	AA		; TAX
-	A580		; LDA 80	; location counter
-	9520		; STA 20,X	; values stored from 20...
-	A581		; LDA 81
-	9521		; STA 21,X
-	60		; RTS
-
-:eval_label
-	20 @getchar	; JSR getchar
-	18		; CLC
-	69BF		; ADC #BF	; 'A'-'Z' -> 0...
-	0A		; ASL A		; sizeof(label) = 2
-	AA		; TAX
-	B520		; LDA 20,X
-	20 @emit	; JSR emit
-	20 @incr_loc	; JSR incr_loc
-	B521		; LDA 21,X
-	20 @emit	; JSR emit
-	20 @incr_loc	; JSR incr_loc
-	60		; RTS
-
 ; The variable table (vtable) is a packed array of null-terminated records:
 ;
 ;	2 bytes: value (16-bit memory address)
@@ -259,28 +233,6 @@
 	E685		; INC 85
 	60		; RTS
 
-:lo_byte				; eval_label, but emit low byte only
-	20 @getchar	; JSR getchar
-	18		; CLC
-	69BF		; ADC #BF	; 'A'-'Z' -> 0...
-	0A		; ASL A		; sizeof(label) = 2
-	AA		; TAX
-	B520		; LDA 20,X
-	20 @emit	; JSR emit
-	20 @incr_loc	; JSR incr_loc
-	60		; RTS
-
-:hi_byte				;eval_label, but emit high byte only
-	20 @getchar	; JSR getchar
-	18		; CLC
-	69BF		; ADC #BF	; 'A'-'Z' -> 0...
-	0A		; ASL A		; sizeof(label) = 2
-	AA		; TAX
-	B521		; LDA 21,X
-	20 @emit	; JSR emit
-	20 @incr_loc	; JSR incr_loc
-	60		; RTS
-
 :printhex
 	AA		; TAX		; backup
 	4A		; LSR A		; high order nibble
@@ -353,44 +305,6 @@
 	9002		; BCC +2
 	E601		; INC 01
 	4C @pv_loop	; JMP
-
-:print_symbol_table
-	A9 "P"		; LDA #"P"
-	20 @putchar	; JSR putchar
-	A901		; LDA #1
-	20 @printhex	; JSR printhex
-	A90A		; LDA #"\n"
-	20 @putchar	; JSR putchar
-	A200		; LDX #00
-:pst_loop
-	A9 "*"		; LDA #"*"
-	20 @putchar	; JSR putchar
-	B521		; LDA 21,X
-	DA		; PHX
-	20 @printhex	; JSR printhex
-	FA		; PLX
-	B520		; LDA 20,X
-	DA		; PHX
-	20 @printhex	; JSR printhex
-	FA		; PLX
-	A9 " "		; LDA #" "
-	20 @putchar	; JSR putchar
-	A9 "."		; LDA #"."
-	20 @putchar	; JSR putchar
-	8A		; TXA
-	4A		; LSR A
-	18		; CLC
-	6941		; ADC #41	; 0..25 -> 'A'-'Z'
-	20 @putchar	; JSR putchar
-	A90A		; LDA #"\n"
-	20 @putchar	; JSR putchar
-	E8		; INX
-	E8		; INX
-	8A		; TXA
-	C934		; CMP #34
-	D001		; BNE +1
-	60		; RTS
-	4C @pst_loop	; JMP
 
 :string_literal
 	20 @getchar	; JSR getchar
@@ -481,17 +395,7 @@
 	20 @set_org	; JSR set_org
 	4C @main_loop	; JMP
 			;
-	C9 "."		; CMP #'.'
-	D006		; BNE +6
-	20 @define_label ; JSR
-	4C @main_loop	; JMP
-			;
-	C9 "&"		; CMP #'&'
-	D006		; BNE +6
-	20 @eval_label	; JSR
-	4C @main_loop	; JMP
-			;
-	C9 "]"		; CMP #'>'
+	C9 "]"		; CMP #']'
 	D006		; BNE +6
 	20 @get_hi	; JSR get_hi
 	4C @main_loop	; JMP
@@ -499,16 +403,6 @@
 	C9 "["		; CMP #'['
 	D006		; BNE +6
 	20 @get_lo	; JSR get_lo
-	4C @main_loop	; JMP
-			;
-	C9 ">"		; CMP #'>'
-	D006		; BNE +6
-	20 @hi_byte	; JSR hi_byte
-	4C @main_loop	; JMP
-			;
-	C9 "<"		; CMP #'<'
-	D006		; BNE +6
-	20 @lo_byte	; JSR lo_byte
 	4C @main_loop	; JMP
 			;
 	C922		; CMP #'"'
