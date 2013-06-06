@@ -37,12 +37,8 @@
 :main_loop
 	20 &getchar	; JSR getchar
 	C9FF		; CMP #FF	; EOF?
-	D00A		; BNE +10
-	A5 <pass	; LDA pass
-	C900		; CMP #0
 	D003		; BNE +3
-	20 &print_vtable ; JSR print_vtable
-	00		; BRK
+	4C &end_of_input ; JMP end_of_input
 			;
 	C9 " "		; CMP #' '	; skip white space
 	F0 ~main_loop	; BEQ main_loop
@@ -108,6 +104,13 @@
 	20 &incr_loc	; JSR incr_loc
 			;
 	4C &main_loop	; JMP main_loop
+
+:end_of_input
+	A5 <pass	; LDA pass
+	C900		; CMP #0
+	D003		; BNE +3
+	20 &print_vtable ; JSR print_vtable
+	00		; BRK
 
 :set_loc
 	20 &getchar	; JSR getchar
