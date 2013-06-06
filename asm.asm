@@ -462,20 +462,19 @@
 :main_loop
 	20 @getchar	; JSR getchar
 	C9FF		; CMP #FF	; EOF?
-	D00D		; BNE +13
+	D00A		; BNE +10
 	A582		; LDA 82
 	C900		; CMP #0
-	D006		; BNE +6
-	20 @print_symbol_table ; JSR
+	D003		; BNE +3
 	20 @print_variable_table ; JSR
 	00		; BRK
 			;
 	C9 " "		; CMP #' '	; skip white space
-	F0 -18		; BEQ loop
+	F0 -15		; BEQ loop
 	C909		; CMP #'\t'
-	F0 -1C		; BEQ loop
+	F0 -19		; BEQ loop
 	C90A		; CMP #'\n'
-	F0 -20		; BEQ loop
+	F0 -1D		; BEQ loop
 			;		; switch on pseudo-op
 	C9 "*"		; CMP #'*'
 	D006		; BNE +6
