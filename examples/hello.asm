@@ -12,13 +12,13 @@
 	AA		; TAX
 
 :loop					; 1003
-	BD @hello	; LDA hello, X
+	BD &hello	; LDA hello, X
 	C900		; CMP #0
 	D001		; BNE +1
 	00		; BRK
-	20 @putchar	; JSR putchar
+	20 &putchar	; JSR putchar
 	E8		; INX
-	4C @loop	; JMP loop
+	4C &loop	; JMP loop
 
 :hello					; 1012
 	"Hello, World!"
