@@ -37,12 +37,8 @@
 	D003		; BNE +3
 	4C &end_of_input ; JMP end_of_input
 			;
-	C9 " "		; CMP #' '	; skip white space
-	F0 ~main_loop	; BEQ main_loop
-	C909		; CMP #'\t'
-	F0 ~main_loop	; BEQ main_loop
-	C90A		; CMP #'\n'
-	F0 ~main_loop	; BEQ main_loop
+	20 &is_white	; JSR is_white
+	B0 ~main_loop	; BCS main_loop
 			;		; switch on pseudo-op
 	C9 "*"		; CMP #'*'
 	D006		; BNE +6
@@ -228,12 +224,8 @@
 	A002		; LDY #2	; Note 2-byte offset
 :read_var_loop
 	20 &getchar	; JSR getchar
-	C9 " "		; CMP #' '
-	F0 ~read_var_end ; BEQ read_var_end
-	C909		; CMP #'\t'
-	F0 ~read_var_end ; BEQ read_var_end
-	C90A		; CMP #'\n'
-	F0 ~read_var_end ; BEQ read_var_end
+	20 &is_white	; JSR is_white
+	B0 ~read_var_end ; BCS read_var_end
 	99 &buf		; STA buf,Y
 	C8		; INY
 	D0 ~read_var_loop ; BNE read_var_loop
@@ -469,3 +461,15 @@
 	E6 <vcurh	; INC vcurh
 	4C &pv_loop	; JMP
 
+:is_white
+	C9 " "		; CMP #' '
+	F0 ~is_white_true ; BEQ is_white_true
+	C909		; CMP #'\t'
+	F0 ~is_white_true ; BEQ is_white_true
+	C90A		; CMP #'\n'
+	F0 ~is_white_true ; BEQ is_white_true
+	18		; CLC		; false
+	60		; RTS
+:is_white_true
+	38		; SEC		; true
+	60		; RTS
