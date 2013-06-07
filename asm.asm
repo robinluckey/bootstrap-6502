@@ -7,9 +7,6 @@
 *0081	:loch
 *0082	:pass		; assembly pass (0 or 1)
 
-*0084	:bufl		; pointer to current location in buf
-*0085	:bufh
-
 *0086	:vcurl		; pointer to current vtable entry
 *0087	:vcurh		; pointer to current vtable entry
 *0088	:vnextl		; pointer to next available vtable entry
@@ -228,10 +225,6 @@
 			; stores it in :buf, offset by 2 bytes
 			; to match vtable records.
 			;
-	A9 <buf		; LDA #lo(buf)
-	85 <bufl	; STA bufl
-	A9 >buf		; LDA #hi(buf)
-	85 <bufh	; STA bufh
 	A002		; LDY #2	; Note 2-byte offset
 :read_var_loop
 	20 &getchar	; JSR getchar
@@ -241,13 +234,13 @@
 	F0 ~read_var_end ; BEQ read_var_end
 	C90A		; CMP #'\n'
 	F0 ~read_var_end ; BEQ read_var_end
-	91 <bufl	; STA (bufl),Y
+	99 &buf		; STA buf,Y
 	C8		; INY
 	D0 ~read_var_loop ; BNE read_var_loop
 	00		; BRK		; error -- variable name too long
 :read_var_end
 	A900		; LDA #0	; null terminate input buffer
-	91 <bufl	; STA (bufl),Y
+	99 &buf		; STA buf,Y
 	60		; RTS
 
 :seek_var		; Finds a named variable in the vtable.
@@ -268,10 +261,6 @@
 	85 <vcurl	; STA vcurl
 	A9 >vtable	; LDA #hi(vtable)
 	85 <vcurh	; STA vcurh
-	A9 <buf		; LDA #lo(buf)	; temp pointer into buffer A
-	85 <bufl	; STA bufl
-	A9 >buf		; LDA #hi(buf)
-	85 <bufh	; STA bufh
 :seek_var_each
 	A5 <vcurl	; LDA vcurl	; reached end of vtable?
 	C5 <vnextl	; CMP vnextl
@@ -285,7 +274,7 @@
 	A002		; LDY #2	; variable name follows 2-byte address
 :seek_var_cmp_loop
 	B1 <vcurl	; LDA (vcurl),Y
-	D1 <bufl	; CMP (bufl),Y
+	D9 &buf		; CMP buf,Y
 	D0 ~seek_var_skip ; BNE seek_var_skip
 	C900		; CMP #0	; reached end of name -> matched
 	F0 ~seek_var_found ; BEQ seek_var_found
@@ -314,7 +303,7 @@
 			; ...during pass 0, increments location counter only.
 			; ...during pass 1, also evaluates and emits its value.
 			;
-	20 &read_var	; JSR read_var  ; sets buf, bufl
+	20 &read_var	; JSR read_var
 	20 &incr_loc	; JSR incr_loc
 	20 &incr_loc	; JSR incr_loc
 			;
@@ -334,7 +323,7 @@
 
 :get_hi			; Same as get_var, but emits hi byte only
 			;
-	20 &read_var	; JSR read_var  ; fills buf, inits bufl
+	20 &read_var	; JSR read_var  ; fills buf
 	20 &incr_loc	; JSR incr_loc
 			;
 	A5 <pass	; LDA pass
@@ -350,7 +339,7 @@
 
 :get_lo			; Same as get_var, but emits lo byte only
 			;
-	20 &read_var	; JSR read_var  ; fill buf, sets bufl
+	20 &read_var	; JSR read_var  ; fill buf
 	20 &incr_loc	; JSR incr_loc
 			;
 	A5 <pass	; LDA pass
@@ -368,7 +357,7 @@
 			; from current location (appropriate for branch
 			; instructions).
 			;
-	20 &read_var	; JSR read_var  ; fills buf, sets bufl
+	20 &read_var	; JSR read_var  ; fills buf
 	20 &incr_loc	; JSR incr_loc
 			;
 	A5 <pass	; LDA pass
@@ -392,7 +381,7 @@
 			; An existing variable will be overwritten. New
 			; variables will be appended to the end of the vtable.
 			;
-	20 &read_var	; JSR read_var  ; fills buf, sets bufl,h
+	20 &read_var	; JSR read_var  ; fills buf
 	20 &seek_var	; JSR seek_var	; sets vcurl,h
 	48		; PHA		; 0 if record did not exist (new entry)
 			;
@@ -404,7 +393,7 @@
 	91 <vcurl	; STA (vcurl),Y
 :set_var_loop
 	C8		; INY		; save variable name
-	B1 <bufl	; LDA (bufl),Y
+	B9 &buf		; LDA buf,Y
 	91 <vcurl	; STA (vcurl),Y
 	C900		; CMP #0
 	D0 ~set_var_loop ; BNE set_var_loop
