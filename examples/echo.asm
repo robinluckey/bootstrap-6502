@@ -9,8 +9,8 @@
 
 :main
 	20 &getchar	; JSR getchar
-	C9FF		; CMP EOF?
-	D001		; BNE +1
+	C9 FF		; CMP EOF?
+	D0 01		; BNE +1
 	00		; BRK
 	20 &putchar	; JSR putchar
 	4C &main	; JMP main
