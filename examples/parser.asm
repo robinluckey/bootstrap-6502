@@ -5,6 +5,12 @@
 
 *0080	:locl		; location counter
 *0081	:loch
+*0082	:pass		; assembly pass (0 or 1)
+
+*0086	:vcurl		; pointer to current vtable entry
+*0087	:vcurh		; pointer to current vtable entry
+*0088	:vnextl		; pointer to next available vtable entry
+*0089	:vnexth
 
 *0090	:cursor		; offset to last consumed character in line
 *0091	:org		; offset to address within buffer (0 = no address)
@@ -19,7 +25,12 @@
 *00A0	:putsl		; address of string argument to puts
 *00A1	:putsh
 
+;	data storage
+
 *2000	:line		; length-prefixed string input buffer
+*2100	:vtable		; variable-length symbol table
+
+;	code
 
 *1000
 
@@ -27,6 +38,11 @@
 	A9 00		; LDA #00
 	85 <linel	; STA linel
 	85 <lineh	; STA lineh
+	85 <pass	; STA pass
+	A9 <vtable	; LDA lo(vtable)
+	85 <vnextl	; STA vnextl
+	A9 >vtable	; LDA hi(vtable)
+	85 <vnexth	; STA vnexth
 
 :main_loop
 	20 &readline	; JSR readline
@@ -37,6 +53,10 @@
 	20 &show	; JSR show
 	4C &main_loop	; JUMP main_loop
 :exit
+	A5 <pass	; LDA pass
+	C9 00		; CMP #0
+	D0 03		; BNE +3
+	20 &print_vtable ; JSR print_vtable
 	00		; BRK
 
 :readline
@@ -178,6 +198,7 @@
 
 :eval
 	20 &eval_org	; JSR eval_org
+	20 &eval_mnemonic ; JSR eval_mnemonic
 	60		; RTS
 
 :eval_org
@@ -189,6 +210,26 @@
 	85 <loch	; STA loch	; MSB first
 	20 &parsehex	; JSR parsehex
 	85 <locl	; STA locl
+	60		; RTS
+
+:eval_mnemonic
+	A4 <mnemonic	; LDY mnemonic
+	D0 01		; BNE +1
+	60		; RTS
+	B9 &line	; LDA line,Y
+
+	C9 "P"		; CMP #'P'
+	D0 04		; BNE +4
+	20 &set_pass	; JSR set_pass
+	60		; RTS
+
+	; unrecognized mnemonic
+	60		; RTS
+
+:set_pass
+	C8		; INY		; skip 'P' char
+	20 &parsehex	; JSR parsehex
+	85 <pass	; STA pass
 	60		; RTS
 
 :parsehex
@@ -216,6 +257,12 @@
 	69F8		; ADC #F8
 	290F		; AND #0F
 	0500		; ORA 00
+	60		; RTS
+
+:incr_loc
+	E6 <locl	; INC locl
+	D002		; BNE +2
+	E6 <loch	; INC loch
 	60		; RTS
 
 :puts
@@ -275,6 +322,61 @@
 	20 &putchar	; JSR putchar
 	60		; RTS
 
+:print_vtable
+	A9 "P"		; LDA #"P"
+	20 &putchar	; JSR putchar
+	A901		; LDA #1
+	20 &printhex	; JSR printhex
+	A90A		; LDA #"\n"
+	20 &putchar	; JSR putchar
+			;
+	A9 <vtable	; LDA lo(vtable)
+	85 <vcurl	; STA vcurl
+	A9 >vtable	; LDA hi(vtable)
+	85 <vcurh	; STA vcurh
+:pv_loop
+	A5 <vcurl	; LDA vcurl	; at end of vtable?
+	C5 <vnextl	; CMP (vnextl)
+	D007		; BNE +7
+	A5 <vcurh	; LDA vcurh
+	C5 <vnexth	; CMP (vnexth)
+	D001		; BNE +1
+	60		; RTS
+
+	A9 "*"		; LDA #"*"
+	20 &putchar	; JSR putchar
+	A001		; LDY #01	; print address -- high byte first!
+	B1 <vcurl	; LDA (vcurl),Y
+	20 &printhex	; JSR printhex
+	A000		; LDY #00
+	B1 <vcurl	; LDA (vcurl),Y
+	20 &printhex	; JSR printhex
+	A9 " "		; LDA #" "
+	20 &putchar	; JSR putchar
+	A9 ":"		; LDA #":"
+	20 &putchar	; JSR putchar
+
+	A002		; LDY #02
+:pv_name_loop
+	B1 <vcurl	; LDA (vcurl),Y
+	C900		; CMP #0
+	F0 ~pv_end_of_name ; BEQ pv_end_of_name
+	20 &putchar	; JSR putchar
+	C8		; INY
+	D0 ~pv_name_loop ; BNE :pv_name_loop
+	00		; BRK		; error -- variable name too long
+:pv_end_of_name
+	A90A		; LDA #"\n"
+	20 &putchar	; JSR putchar
+	C8		; INY		; update temp pointer to next element
+	98		; TYA
+	18		; CLC
+	65 <vcurl	; ADC vcurl
+	85 <vcurl	; STA vcurl
+	9002		; BCC +2
+	E6 <vcurh	; INC vcurh
+	4C &pv_loop	; JMP
+
 :show
 	A9 <sz_line	; LDA #lo(sz_line)
 	85 <putsl	; STA putsl
@@ -284,6 +386,14 @@
 	A5 <lineh	; LDA lineh
 	20 &printhex	; JSR printhex
 	A5 <linel	; LDA linel
+	20 &printhex	; JSR printhex
+
+	A9 <sz_pass	; LDA #lo(sz_pass)
+	85 <putsl	; STA putsl
+	A9 >sz_pass	; LDA #hi(sz_pass)
+	85 <putsh	; STA putsh
+	20 &puts	; JSR puts
+	A5 <pass	; LDA pass
 	20 &printhex	; JSR printhex
 
 	A9 <sz_loc	; LDA #lo(sz_loc)
@@ -328,24 +438,25 @@
 	A5 <operand	; LDA operand
 	20 &printhex	; JSR printhex
 
-	A9 <sz_comment	; LDA #lo(sz_comment)
-	85 <putsl	; STA putsl
-	A9 >sz_comment	; LDA #hi(sz_comment)
-	85 <putsh	; STA putsh
-	20 &puts	; JSR puts
-	A5 <comment	; LDA comment
-	20 &printhex	; JSR printhex
+	;A9 <sz_comment	; LDA #lo(sz_comment)
+	;85 <putsl	; STA putsl
+	;A9 >sz_comment	; LDA #hi(sz_comment)
+	;85 <putsh	; STA putsh
+	;20 &puts	; JSR puts
+	;A5 <comment	; LDA comment
+	;20 &printhex	; JSR printhex
 
 	A9 0A		; LDA #'\n'
 	20 &putchar	; JSR putchar
 	60		; RTS
 
-:sz_line	"  line: " 00
+:sz_line	"; line: " 00
+:sz_pass	"  pass: " 00
 :sz_loc		"  loc: " 00
 :sz_org		"  org: " 00
 :sz_label	"  label: " 00
-:sz_mnemonic	"  mnemonic: " 00
-:sz_operand	"  operand: " 00
+:sz_mnemonic	"  mnem: " 00
+:sz_operand	"  oper: " 00
 :sz_comment	"  comment: " 00
 
 :hex_digits
