@@ -35,6 +35,7 @@
 *1000
 
 :main
+:init
 	A9 00		; LDA #00
 	85 <linel	; STA linel
 	85 <lineh	; STA lineh
@@ -198,6 +199,7 @@
 
 :eval
 	20 &eval_org	; JSR eval_org
+	20 &eval_label	; JSR eval_label
 	20 &eval_mnemonic ; JSR eval_mnemonic
 	60		; RTS
 
@@ -210,6 +212,15 @@
 	85 <loch	; STA loch	; MSB first
 	20 &parsehex	; JSR parsehex
 	85 <locl	; STA locl
+	60		; RTS
+
+:eval_label
+	A4 <label	; LDY label
+	D0 01		; BNE +1
+	60		; RTS
+	C8		; INY		; skip ':' char
+	84 <cursor	; STY cursor
+	20 &set_var	; JSR set_var
 	60		; RTS
 
 :eval_mnemonic
@@ -322,6 +333,106 @@
 	20 &putchar	; JSR putchar
 	60		; RTS
 
+:seek_var		; Using the variable name at cursor position,
+			; find the variable in the vtable.
+			;
+			; If the variable is found, the return accumulator
+			; will be 1, and addresses vcurl,h will point at its
+			; vtable entry.
+			;
+			; If the variable is not found, the accumulator will be
+			; 0, and vcurl,h will be equal to vnext, beyond the
+			; end of the vtable. The caller may append a new value
+			; here.
+			;
+	A9 <vtable	; LDA #lo(vtable); begin at top of vtable
+	85 <vcurl	; STA vcurl
+	A9 >vtable	; LDA #hi(vtable)
+	85 <vcurh	; STA vcurh
+:seek_var_each
+	A5 <vcurl	; LDA vcurl	; reached end of vtable?
+	C5 <vnextl	; CMP vnextl
+	D0 ~seek_var_cmp ; BNE seek_var_cmp
+	A5 <vcurh	; LDA vcurh
+	C5 <vnexth	; CMP vnexth
+	D0 ~seek_var_cmp ; BNE seek_var_cmp
+	A900		; LDA #00	; variable does not exist
+	60		; RTS
+:seek_var_cmp
+	A002		; LDY #2	; vtable name follows 2-byte address
+	A6 <cursor	; LDX cursor
+:seek_var_cmp_loop
+	B1 <vcurl	; LDA (vcurl),Y
+	DD &line	; CMP line,X
+	D0 ~seek_var_end ; BNE seek_var_end
+	20 &is_token	; end of name?
+	90 ~seek_var_found ; BCC seek_var_found
+	E8		; INX
+	C8		; INY
+	D0 ~seek_var_cmp_loop ; BNE seep_var_cmp_loop
+	00		; BRK		; error -- variable name too long
+:seek_var_end
+	B1 <vcurl	; LDA (vcurl),Y	; seek to end of unmatched name
+	C8		; INY
+	C9 00		; CMP #0
+	D0 ~seek_var_end ; BNE seek_var_skip
+:seek_var_next
+	98		; TYA		; move vcur to next variable in vtable
+	18		; CLC
+	65 <vcurl	; ADC vcurl
+	85 <vcurl	; STA vcurl
+	90 02		; BCC +2
+	E6 <vcurh	; INC 01
+	4C &seek_var_each ; JUMP
+:seek_var_found
+	A9 01		; LDA #01	; variable exists
+	60		; RTS
+
+:set_var		; Reads a variable name from line at cursor position,
+			; then writes an entry into the vtable using the
+			; current location counter as its value.
+			;
+			; An existing variable will be overwritten. New
+			; variables will be appended to the end of the vtable.
+			;
+	20 &seek_var	; JSR seek_var	; sets vcurl,h
+	48		; PHA		; 0 if record did not exist (new entry)
+			;
+	A000		; LDY #00	; save location counter value
+	A5 <locl	; LDA locl
+	91 <vcurl	; STA (vcurl),Y
+	C8		; INY
+	A5 <loch	; LDA loch
+	91 <vcurl	; STA (vcurl),Y
+					; save variable name
+	A6 <cursor	; LDX cursor
+:set_var_loop
+	C8		; INY
+	BD &line	; LDA line,X
+	91 <vcurl	; STA (vcurl),Y
+	E8		; INX
+	20 &is_token	; end of name?
+	B0 ~set_var_loop ; BCS set_var_loop
+			;
+	A9 00		; LDA #00	; null terminate name
+	91 <vcurl	; STA (vcurl),Y
+	C8		; INY
+			;
+			; If we have extended the vtable, we must update the
+			; end pointer vnext.
+			;
+	68		; PLA
+	C9 00		; CMP #00
+	F0 01		; BEQ +01
+	60		; RTS
+	98		; TYA		; update vnext
+	18		; CLC
+	65 <vnextl	; ADC vnextl
+	85 <vnextl	; STA vnextl
+	90 02		; BCC +2
+	E6 <vnexth	; INC vnexth
+	60		; RTS
+
 :print_vtable
 	A9 "P"		; LDA #"P"
 	20 &putchar	; JSR putchar
@@ -359,16 +470,15 @@
 	A002		; LDY #02
 :pv_name_loop
 	B1 <vcurl	; LDA (vcurl),Y
+	C8		; INY
 	C900		; CMP #0
 	F0 ~pv_end_of_name ; BEQ pv_end_of_name
 	20 &putchar	; JSR putchar
-	C8		; INY
 	D0 ~pv_name_loop ; BNE :pv_name_loop
 	00		; BRK		; error -- variable name too long
 :pv_end_of_name
 	A90A		; LDA #"\n"
 	20 &putchar	; JSR putchar
-	C8		; INY		; update temp pointer to next element
 	98		; TYA
 	18		; CLC
 	65 <vcurl	; ADC vcurl
@@ -377,7 +487,22 @@
 	E6 <vcurh	; INC vcurh
 	4C &pv_loop	; JMP
 
-:show
+:show			; debugging aid
+	20 &show_line
+	;20 &show_pass
+	20 &show_loc
+	20 &show_org
+	20 &show_label
+	20 &show_mnemonic
+	20 &show_operand
+	;20 &show_comment
+	20 &show_vnext
+	A9 0A		; LDA #'\n'
+	20 &putchar	; JSR putchar
+	60		; RTS
+	60		; RTS
+
+:show_line
 	A9 <sz_line	; LDA #lo(sz_line)
 	85 <putsl	; STA putsl
 	A9 >sz_line	; LDA #hi(sz_line)
@@ -387,7 +512,9 @@
 	20 &printhex	; JSR printhex
 	A5 <linel	; LDA linel
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_pass
 	A9 <sz_pass	; LDA #lo(sz_pass)
 	85 <putsl	; STA putsl
 	A9 >sz_pass	; LDA #hi(sz_pass)
@@ -395,7 +522,9 @@
 	20 &puts	; JSR puts
 	A5 <pass	; LDA pass
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_loc
 	A9 <sz_loc	; LDA #lo(sz_loc)
 	85 <putsl	; STA putsl
 	A9 >sz_loc	; LDA #hi(sz_loc)
@@ -405,7 +534,9 @@
 	20 &printhex	; JSR printhex
 	A5 <locl	; LDA locl
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_org
 	A9 <sz_org	; LDA #lo(sz_org)
 	85 <putsl	; STA putsl
 	A9 >sz_org	; LDA #hi(sz_org)
@@ -413,7 +544,9 @@
 	20 &puts	; JSR puts
 	A5 <org		; LDA org
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_label
 	A9 <sz_label	; LDA #lo(sz_label)
 	85 <putsl	; STA putsl
 	A9 >sz_label	; LDA #hi(sz_label)
@@ -421,7 +554,9 @@
 	20 &puts	; JSR puts
 	A5 <label	; LDA label
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_mnemonic
 	A9 <sz_mnemonic	; LDA #lo(sz_mnemonic)
 	85 <putsl	; STA putsl
 	A9 >sz_mnemonic	; LDA #hi(sz_mnemonic)
@@ -429,7 +564,9 @@
 	20 &puts	; JSR puts
 	A5 <mnemonic	; LDA mnemonic
 	20 &printhex	; JSR printhex
+	60		; RTS
 
+:show_operand
 	A9 <sz_operand	; LDA #lo(sz_operand)
 	85 <putsl	; STA putsl
 	A9 >sz_operand	; LDA #hi(sz_operand)
@@ -437,27 +574,61 @@
 	20 &puts	; JSR puts
 	A5 <operand	; LDA operand
 	20 &printhex	; JSR printhex
-
-	;A9 <sz_comment	; LDA #lo(sz_comment)
-	;85 <putsl	; STA putsl
-	;A9 >sz_comment	; LDA #hi(sz_comment)
-	;85 <putsh	; STA putsh
-	;20 &puts	; JSR puts
-	;A5 <comment	; LDA comment
-	;20 &printhex	; JSR printhex
-
-	A9 0A		; LDA #'\n'
-	20 &putchar	; JSR putchar
 	60		; RTS
 
-:sz_line	"; line: " 00
-:sz_pass	"  pass: " 00
-:sz_loc		"  loc: " 00
-:sz_org		"  org: " 00
-:sz_label	"  label: " 00
-:sz_mnemonic	"  mnem: " 00
-:sz_operand	"  oper: " 00
-:sz_comment	"  comment: " 00
+:show_comment
+	A9 <sz_comment	; LDA #lo(sz_comment)
+	85 <putsl	; STA putsl
+	A9 >sz_comment	; LDA #hi(sz_comment)
+	85 <putsh	; STA putsh
+	20 &puts	; JSR puts
+	A5 <comment	; LDA comment
+	20 &printhex	; JSR printhex
+	60		; RTS
+
+:show_vnext
+	A9 <sz_vnext	; LDA #lo(sz_vnext)
+	85 <putsl	; STA putsl
+	A9 >sz_vnext	; LDA #hi(sz_vnext)
+	85 <putsh	; STA putsh
+	20 &puts	; JSR puts
+	A5 <vnexth	; LDA vnexth
+	20 &printhex	; JSR printhex
+	A5 <vnextl	; LDA vnextl
+	20 &printhex	; JSR printhex
+	60		; RTS
+
+:sz_line	"; line:" 00
+:sz_pass	"  pass:" 00
+:sz_loc		"  loc:" 00
+:sz_org		"  org:" 00
+:sz_label	"  label:" 00
+:sz_mnemonic	"  mnem:" 00
+:sz_operand	"  oper:" 00
+:sz_comment	"  comment:" 00
+:sz_vnext	"  vnext:" 00
 
 :hex_digits
 	"0123456789ABCDEF"
+
+:hex_dump		; emit 32 bytes beginning at putsl
+	A5 <putsh	; LDA putsl
+	20 &printhex	; JSR printhex
+	A5 <putsl	; LDA putsh
+	20 &printhex	; JSR printhex
+	A9 ":"		; LDA #":'
+	20 &putchar	; JSR putchar
+	A0 00		; LDY #00
+:hex_dump_loop
+	B1 <putsl	; LDA (putsl),Y
+	84 00		; STY 00
+	20 &printhex	; JSR printhex
+	A9 " "		; LDA #" "
+	20 &putchar	; JSR putchar
+	A4 00		; LDY 00
+	C8		; INY
+	C0 20		; CPY #20
+	D0 ~hex_dump_loop ; BNE hext_dump_loop
+	A9 0A		; LDA #'\n'
+	20 &putchar	; JSR putchar
+	60		; RTS
