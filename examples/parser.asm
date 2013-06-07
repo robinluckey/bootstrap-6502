@@ -3,6 +3,9 @@
 
 ;	page zero global variables
 
+*0080	:locl		; location counter
+*0081	:loch
+
 *0090	:cursor		; offset to last consumed character in line
 *0091	:org		; offset to address within buffer (0 = no address)
 *0092	:label		; offset to label
@@ -30,6 +33,7 @@
 	C9 FF		; CMP #eof
 	F0 ~exit	; BEQ exit
 	20 &parse	; JSR parse
+	20 &eval	; JSR eval
 	20 &show	; JSR show
 	4C &main_loop	; JUMP main_loop
 :exit
@@ -172,6 +176,47 @@
 :find_comment_exit
 	60		; RTS
 
+:eval
+	20 &eval_org	; JSR eval_org
+	60		; RTS
+
+:eval_org
+	A4 <org		; LDY org
+	D0 01		; BNE +1
+	60		; RTS
+	C8		; INY		; skip '*' char
+	20 &parsehex	; JSR parsehex
+	85 <loch	; STA loch	; MSB first
+	20 &parsehex	; JSR parsehex
+	85 <locl	; STA locl
+	60		; RTS
+
+:parsehex
+	; Y register must contain offset to first
+	; hex char in line.
+	; Y will be incremented twice, A holds result.
+
+					; hi nibble
+	B9 &line	; LDA line,Y
+	C8		; INY
+	C93A		; CMP #3A
+	9002		; BCC +2
+	69F8		; ADC #F8
+	290F		; AND #0F
+	0A		; ASL A
+	0A		; ASL A
+	0A		; ASL A
+	0A		; ASL A
+	8500		; STA 00
+					; lo nibble
+	B9 &line	; LDA line,Y
+	C8		; INY
+	C93A		; CMP #3A
+	9002		; BCC +2
+	69F8		; ADC #F8
+	290F		; AND #0F
+	0500		; ORA 00
+	60		; RTS
 
 :puts
 	A0 00		; LDY #00
@@ -241,6 +286,16 @@
 	A5 <linel	; LDA linel
 	20 &printhex	; JSR printhex
 
+	A9 <sz_loc	; LDA #lo(sz_loc)
+	85 <putsl	; STA putsl
+	A9 >sz_loc	; LDA #hi(sz_loc)
+	85 <putsh	; STA putsh
+	20 &puts	; JSR puts
+	A5 <loch	; LDA loch
+	20 &printhex	; JSR printhex
+	A5 <locl	; LDA locl
+	20 &printhex	; JSR printhex
+
 	A9 <sz_org	; LDA #lo(sz_org)
 	85 <putsl	; STA putsl
 	A9 >sz_org	; LDA #hi(sz_org)
@@ -286,6 +341,7 @@
 	60		; RTS
 
 :sz_line	"  line: " 00
+:sz_loc		"  loc: " 00
 :sz_org		"  org: " 00
 :sz_label	"  label: " 00
 :sz_mnemonic	"  mnemonic: " 00
