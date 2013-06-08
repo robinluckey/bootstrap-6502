@@ -7,8 +7,8 @@
 *0081	:loch
 *0082	:pass		; assembly pass (0 or 1)
 
-*0086	:vcurl		; pointer to current vtable entry
-*0087	:vcurh		; pointer to current vtable entry
+*0086	:vcurl		; pointer to current vtable element
+*0087	:vcurh
 *0088	:vnextl		; pointer to next available vtable entry
 *0089	:vnexth
 
@@ -24,6 +24,9 @@
 
 *00A0	:putsl		; address of string argument to puts
 *00A1	:putsh
+
+*00B0	:mcurl		; pointer to current mnemonic table element
+*00B1	:mcurh
 
 ;	data storage
 
@@ -230,8 +233,15 @@
 	A4 <mnemonic	; LDY mnemonic
 	D0 01		; BNE +1
 	60		; RTS
-	B9 &line	; LDA line,Y
 	84 <cursor	; STY <cursor
+
+	20 &lookup_mnemonic ; JSR lookup_mnemonic
+	90 04		; BCC +4
+	20 &emit_opcode	; JSR emit_opcode
+	60		; RTS
+
+	A4 <mnemonic	; LDY mnemonic
+	B9 &line	; LDA line,Y
 	E6 <cursor	; INC <cursor
 
 	C9 "P"		; CMP #'P'
@@ -246,6 +256,71 @@
 			; assume hex mnemonic
 	C6 <cursor	; DEC cursor
 	20 &hex_literal ; JSR hex_literal
+	60		; RTS
+
+:lookup_mnemonic
+	A9 <mtable	; LDA lo(mtable)
+	85 <mcurl	; STA mcurl
+	A9 >mtable	; LDA hi(mtable)
+	85 <mcurh	; STA mcurh
+:lm_each_elem
+	A0 00		; LDY #00
+	A6 <cursor	; LDX cursor
+:lm_each_char
+	B1 <mcurl	; LDA (mcurl),Y
+	F0 ~lm_not_found ; BEQ lm_not_found ; zero marks end of table
+	DD &line	; CMP line,X
+	D0 ~lm_miss	; BNE lm_miss
+	E8		; INX
+	C8		; INY
+	C0 03		; CPY #03
+	90 ~lm_each_char ; BCC lm_each_char
+;lm_found
+	38		; SEC		; return true
+	60		; RTS
+:lm_miss
+	A5 <mcurl	; LDA mcurl
+	18		; CLC
+	69 04		; ADC #04	; sizeof(mtable element)
+	85 <mcurl	; STA mcurl
+	A5 <mcurh	; LDA mcurh
+	69 00		; ADC #00
+	85 <mcurh	; STA mcurl
+	4C &lm_each_elem ; JMP lm_each_elem
+:lm_not_found
+	A9 00		; LDA #00
+	85 <mcurl	; STA mcurl
+	85 <mcurh	; STA mcurh
+	18		; CLC		; return false
+	60		; RTS
+
+:mtable
+	_ "BEQ"
+	_ F0
+	_ "BNE"
+	_ D0
+	_ "BRK"
+	_ 00
+	_ "INX"
+	_ E8
+	_ "INY"
+	_ C8
+	_ "JMP"
+	_ 4C
+	_ "JSR"
+	_ 20
+	_ "RTS"
+	_ 60
+	_ "TAX"
+	_ AA
+
+	_ 00		; null terminator
+
+:emit_opcode
+	A0 03		; LDY #3
+	B1 <mcurl	; LDA (mcurl),Y
+	20 &emit	; JSR emit
+	20 &incr_loc	; JSR incr_loc
 	60		; RTS
 
 :set_pass
@@ -439,7 +514,7 @@
 			;
 			; If the variable is found, the return accumulator
 			; will be 1, and addresses vcurl,h will point at its
-			; vtable entry.
+			; vtable element
 			;
 			; If the variable is not found, the accumulator will be
 			; 0, and vcurl,h will be equal to vnext, beyond the
@@ -470,7 +545,7 @@
 	B0 ~seek_var_end ; BCS seek_var_end	; only one eneed -- go to next
 :seek_var_cmp_char
 	DD &line	; CMP line,X
-	D0 ~seek_var_end ; BNE seek_var_end	; no match -- go to next vtable entry
+	D0 ~seek_var_end ; BNE seek_var_end	; no match -- go to next vtable element
 	E8		; INX			; else onward to next letter
 	C8		; INY
 	D0 ~seek_var_cmp_loop ; BNE seep_var_cmp_loop
@@ -583,14 +658,14 @@
 	60		; RTS
 
 :set_var		; Reads a variable name from line at cursor position,
-			; then writes an entry into the vtable using the
+			; then writes an element into the vtable using the
 			; current location counter as its value.
 			;
 			; An existing variable will be overwritten. New
 			; variables will be appended to the end of the vtable.
 			;
 	20 &seek_var	; JSR seek_var	; sets vcurl,h
-	48		; PHA		; 0 if record did not exist (new entry)
+	48		; PHA		; 0 if record did not exist (new element)
 			;
 	A0 00		; LDY #00	; save location counter value
 	A5 <locl	; LDA locl
@@ -690,7 +765,8 @@
 	20 &show_mnemonic
 	20 &show_operand
 	;20 &show_comment
-	20 &show_vnext
+	;20 &show_vnext
+	20 &show_mcur
 	A9 0A		; LDA #'\n'
 	20 &putchar	; JSR putchar
 	60		; RTS
@@ -791,6 +867,18 @@
 	20 &printhex	; JSR printhex
 	60		; RTS
 
+:show_mcur
+	A9 <sz_mcur	; LDA #lo(sz_mcur)
+	85 <putsl	; STA putsl
+	A9 >sz_mcur	; LDA #hi(sz_mcur)
+	85 <putsh	; STA putsh
+	20 &puts	; JSR puts
+	A5 <mcurh	; LDA mcurh
+	20 &printhex	; JSR printhex
+	A5 <mcurl	; LDA mcurl
+	20 &printhex	; JSR printhex
+	60		; RTS
+
 :sz_line	_ "; line:"
 		_ 00
 :sz_pass	_ "  pass:"
@@ -808,6 +896,8 @@
 :sz_comment	_ "  comment:"
 		_ 00
 :sz_vnext	_ "  vnext:"
+		_ 00
+:sz_mcur	_ "  mcur:"
 		_ 00
 
 :hex_digits _ "0123456789ABCDEF"
