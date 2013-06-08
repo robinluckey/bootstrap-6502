@@ -71,10 +71,11 @@ make it barely a language:
 
  - It can emit a symbol table to allow forward label references.
 
-An important thing that this assembler can _not_ yet do:
-
- - It does not recognize any opcode mnemonics. All actual machine instructions
-   must be entered as hex codes.
+ - The assembler can recognize only a few mnemonics for which the addressing
+   mode is unambiguous -- either always implied or always absolute. For
+   example, the assembler accepts `JSR` and `RTS`, but cannot convert `LDA`
+   to an opcode because addressing mode detection is not yet implemented.
+   Most opcodes, therefore, must be entered by their hex codes.
 
 ## Two-pass assembly process
 
