@@ -276,11 +276,11 @@
 	C0 03		; CPY #03
 	BCC ~lm_each_char
 ;lm_found
-	38		; SEC		; return true
+	SEC		; return true
 	RTS
 :lm_miss
 	A5 <mcurl	; LDA mcurl
-	18		; CLC
+	CLC
 	69 04		; ADC #04	; sizeof(mtable element)
 	85 <mcurl	; STA mcurl
 	A5 <mcurh	; LDA mcurh
@@ -291,7 +291,7 @@
 	A9 00		; LDA #00
 	85 <mcurl	; STA mcurl
 	85 <mcurh	; STA mcurh
-	18		; CLC		; return false
+	CLC		; return false
 	RTS
 
 :mtable
@@ -464,7 +464,7 @@
 	; its negation
 	JSR &parsehex
 	49 FF		; EOR #FF
-	18		; CLC
+	CLC
 	69 01		; ADC #1
 	JSR &emit
 	JSR &incr_loc
@@ -492,10 +492,10 @@
 	BEQ ~is_token_f
 	C9 00		; CMP #00
 	BEQ ~is_token_f
-	38		; SEC		; true
+	SEC		; true
 	RTS
 :is_token_f
-	18		; CLC		; false
+	CLC		; false
 	RTS
 
 :is_white
@@ -503,10 +503,10 @@
 	BEQ ~is_white_t
 	C9 09		; CMP #'\t'
 	BEQ ~is_white_t
-	18		; CLC		; false
+	CLC		; false
 	RTS
 :is_white_t
-	38		; SEC		; true
+	SEC		; true
 	RTS
 
 :printhex
@@ -516,13 +516,13 @@
 	4A		; LSR A
 	4A		; LSR A
 	A8				; lookup hex char
-	18		; CLC
+	CLC
 	B9 &hex_digits	; LDA hex_digits,Y
 	JSR &putchar
 	8A		; TXA		; restore
 	29 0F		; AND #0F	; low order nibble
 	A8				; lookup hex char
-	18		; CLC
+	CLC
 	B9 &hex_digits	; LDA hex_digits,Y
 	JSR &putchar
 	RTS
@@ -564,7 +564,7 @@
 :seek_var_cmp_char
 	DD &line	; CMP line,X
 	BNE ~seek_var_end		; no match -- go to next vtable element
-	INX		; else onward to next letter
+	INX				; else onward to next letter
 	INY
 	BNE ~seek_var_cmp_loop
 	BRK				; error -- variable name too long
@@ -575,7 +575,7 @@
 	BNE ~seek_var_end
 :seek_var_next
 	98		; TYA		; move vcur to next variable in vtable
-	18		; CLC
+	CLC
 	65 <vcurl	; ADC vcurl
 	85 <vcurl	; STA vcurl
 	BCC 02
@@ -668,7 +668,7 @@
 
 	A0 00		; LDY #00
 	B1 <vcurl	; LDA (vcurl),Y
-	38		; SEC		; compute (pv) - (loc), low byte only
+	SEC				; compute (pv) - (loc), low byte only
 	E5 <locl	; SBC locl
 	JSR &emit
 	RTS
@@ -679,10 +679,9 @@
 			;
 			; An existing variable will be overwritten. New
 			; variables will be appended to the end of the vtable.
-			;
 	JSR &seek_var			; sets vcurl,h
-	PHA		; 0 if record did not exist (new element)
-			;
+	PHA				; 0 if record did not exist (new element)
+
 	A0 00		; LDY #00	; save location counter value
 	A5 <locl	; LDA locl
 	91 <vcurl	; STA (vcurl),Y
@@ -711,7 +710,7 @@
 	BEQ 01
 	RTS
 	98		; TYA		; update vnext
-	18		; CLC
+	CLC
 	65 <vnextl	; ADC vnextl
 	85 <vnextl	; STA vnextl
 	BCC 02
@@ -765,7 +764,7 @@
 	A9 0A		; LDA #"\n"
 	JSR &putchar
 	98		; TYA
-	18		; CLC
+	CLC
 	65 <vcurl	; ADC vcurl
 	85 <vcurl	; STA vcurl
 	BCC 02
