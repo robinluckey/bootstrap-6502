@@ -66,7 +66,7 @@
 
 :readline
 	E6 <linel	; INC linel
-	90 02
+	BCC 02
 	E6 <lineh	; INC lineh
 			;
 	A0 00		; LDY #00
@@ -76,7 +76,7 @@
 	C9 FF		; CMP #eof
 	BNE 01
 	RTS
-	C8		; INY
+	INY
 	99 &line	; STA line,Y
 	C9 0A		; CMP #'\n'
 	BNE ~readline_loop
@@ -104,19 +104,19 @@
 :find_org
 	A4 <cursor	; LDY cursor
 :find_org_begin				; seek to beginning of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_white
-	B0 ~find_org_begin ; BCS find_org_begin
+	BCS ~find_org_begin
 	C9 "*"		; CMP #'*'
 	BNE ~find_org_exit
 	84 <org		; STY org
 :find_org_end				; seek to end of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_token
-	B0 ~find_org_end ; BCS find_org_end
-	88		; DEY		; "unconsume" non-token character
+	BCS ~find_org_end
+	DEY		; "unconsume" non-token character
 	84 <cursor	; STY cursor
 :find_org_exit
 	RTS
@@ -124,19 +124,19 @@
 :find_label
 	A4 <cursor	; LDY cursor
 :find_label_begin			; seek to beginning of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_white
-	B0 ~find_label_begin ; BCS find_label_begin
+	BCS ~find_label_begin
 	C9 ":"		; CMP #':'
 	BNE ~find_label_exit
 	84 <label	; STY label
 :find_label_end				; seek to end of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_token
-	B0 ~find_label_end ; BCS find_label_end
-	88		; DEY		; "unconsume" non-token character
+	BCS ~find_label_end
+	DEY		; "unconsume" non-token character
 	84 <cursor	; STY cursor
 :find_label_exit
 	RTS
@@ -144,19 +144,19 @@
 :find_mnemonic
 	A4 <cursor	; LDY cursor
 :find_mnemonic_begin			; seek to beginning of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_white
-	B0 ~find_mnemonic_begin ; BCS find_mnemonic_begin
+	BCS ~find_mnemonic_begin
 	JSR &is_token
-	90 ~find_mnemonic_exit
+	BCC ~find_mnemonic_exit
 	84 <mnemonic	; STY mnemonic
 :find_mnemonic_end			; seek to end of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_token
-	B0 ~find_mnemonic_end ; BCS find_mnemonic_end
-	88		; DEY		; "unconsume" non-token character
+	BCS ~find_mnemonic_end
+	DEY		; "unconsume" non-token character
 	84 <cursor	; STY cursor
 :find_mnemonic_exit
 	RTS
@@ -164,19 +164,19 @@
 :find_operand
 	A4 <cursor	; LDY cursor
 :find_operand_begin			; seek to beginning of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_white
-	B0 ~find_operand_begin ; BCS find_operand_begin
+	BCS ~find_operand_begin
 	JSR &is_token
-	90 ~find_operand_exit
+	BCC ~find_operand_exit
 	84 <operand	; STY operand
 :find_operand_end			; seek to end of token
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_token
-	B0 ~find_operand_end ; BCS find_operand_end
-	88		; DEY		; "unconsume" non-token character
+	BCS ~find_operand_end
+	DEY		; "unconsume" non-token character
 	84 <cursor	; STY cursor
 :find_operand_exit
 	RTS
@@ -184,19 +184,19 @@
 :find_comment
 	A4 <cursor	; LDY cursor
 :find_comment_begin			; seek to beginning of comment
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	JSR &is_white
-	B0 ~find_comment_begin ; BCS find_comment_begin
+	BCS ~find_comment_begin
 	C9 ";"		; CMP #';'
-	90 ~find_comment_exit
+	BCC ~find_comment_exit
 	84 <comment	; STY comment
 :find_comment_end			; seek to end of line
-	C8		; INY
+	INY
 	B9 &line	; LDA line,Y
 	C9 0A		; CMP #'\n'
-	B0 ~find_comment_end ; BCS find_comment_end
-	88		; DEY		; "unconsume" newline character
+	BCS ~find_comment_end
+	DEY		; "unconsume" newline character
 	84 <cursor	; STY cursor
 :find_comment_exit
 	RTS
@@ -212,7 +212,7 @@
 	A4 <org		; LDY org
 	BNE 01
 	RTS
-	C8		; INY		; skip '*' char
+	INY		; skip '*' char
 	84 <cursor	; STY cursor
 	JSR &parsehex
 	85 <loch	; STA loch	; MSB first
@@ -224,7 +224,7 @@
 	A4 <label	; LDY label
 	BNE 01
 	RTS
-	C8		; INY		; skip ':' char
+	INY		; skip ':' char
 	84 <cursor	; STY cursor
 	JSR &set_var
 	RTS
@@ -236,7 +236,7 @@
 	84 <cursor	; STY <cursor
 
 	JSR &lookup_mnemonic
-	90 04
+	BCC 04
 	JSR &emit_opcode
 	RTS
 
@@ -271,10 +271,10 @@
 	BEQ ~lm_not_found		; zero marks end of table
 	DD &line	; CMP line,X
 	BNE ~lm_miss
-	E8		; INX
-	C8		; INY
+	INX
+	INY
 	C0 03		; CPY #03
-	90 ~lm_each_char
+	BCC ~lm_each_char
 ;lm_found
 	38		; SEC		; return true
 	RTS
@@ -297,12 +297,20 @@
 :mtable
 	_ "BCC"
 	_ 90
+	_ "BCS"
+	_ B0
 	_ "BEQ"
 	_ F0
 	_ "BNE"
 	_ D0
 	_ "BRK"
 	_ 00
+	_ "CLC"
+	_ 18
+	_ "DEX"
+	_ CA
+	_ "DEY"
+	_ 88
 	_ "INX"
 	_ E8
 	_ "INY"
@@ -311,8 +319,14 @@
 	_ 4C
 	_ "JSR"
 	_ 20
+	_ "PHA"
+	_ 48
+	_ "PLA"
+	_ 68
 	_ "RTS"
 	_ 60
+	_ "SEC"
+	_ 38
 	_ "TAX"
 	_ AA
 	_ "TAY"
@@ -382,9 +396,9 @@
 	A4 <cursor	; LDY <cursor
 					; hi nibble
 	B9 &line	; LDA line,Y
-	C8		; INY
+	INY
 	C9 3A		; CMP #3A
-	90 02
+	BCC 02
 	69 F8		; ADC #F8
 	29 0F		; AND #0F
 	0A		; ASL A
@@ -394,9 +408,9 @@
 	85 00		; STA 00
 					; lo nibble
 	B9 &line	; LDA line,Y
-	C8		; INY
+	INY
 	C9 3A		; CMP #3A
-	90 02
+	BCC 02
 	69 F8		; ADC #F8
 	29 0F		; AND #0F
 	05 00		; ORA 00
@@ -411,14 +425,14 @@
 	RTS
 
 :emit
-	48		; PHA
+	PHA
 	A5 <pass	; LDA pass
 	C9 01		; CMP #1
 	BNE 05
-	68		; PLA
+	PLA
 	JSR &putchar
 	RTS
-	68		; PLA
+	PLA
 	RTS
 
 :string_literal
@@ -437,8 +451,8 @@
 	; cursor position
 	A4 <cursor	; LDY cursor
 	B9 &line	; LDA line,Y
-	JSR &is_token	; BCS is_token
-	B0 01		; BCS +1
+	JSR &is_token
+	BCS 01
 	RTS
 	JSR &parsehex
 	JSR &emit
@@ -463,7 +477,7 @@
 	BNE 01
 	RTS
 	JSR &putchar
-	C8		; INY
+	INY
 	BNE ~puts_loop
 	BRK		; error -- string too long
 
@@ -545,18 +559,18 @@
 	BNE ~seek_var_cmp_char
 	BD &line	; LDA line,X
 	JSR &is_token
-	90 ~seek_var_found 		; both variables ended -- match
-	B0 ~seek_var_end ; BCS seek_var_end	; only one eneed -- go to next
+	BCC ~seek_var_found		; both variables ended -- match
+	BCS ~seek_var_end
 :seek_var_cmp_char
 	DD &line	; CMP line,X
 	BNE ~seek_var_end		; no match -- go to next vtable element
-	E8		; INX		; else onward to next letter
-	C8		; INY
+	INX		; else onward to next letter
+	INY
 	BNE ~seek_var_cmp_loop
 	BRK				; error -- variable name too long
 :seek_var_end
 	B1 <vcurl	; LDA (vcurl),Y	; seek to end of unmatched name
-	C8		; INY
+	INY
 	C9 00		; CMP #0
 	BNE ~seek_var_end
 :seek_var_next
@@ -564,7 +578,7 @@
 	18		; CLC
 	65 <vcurl	; ADC vcurl
 	85 <vcurl	; STA vcurl
-	90 02
+	BCC 02
 	E6 <vcurh	; INC 01
 	BNE ~seek_var_each
 :seek_var_not_found
@@ -667,32 +681,32 @@
 			; variables will be appended to the end of the vtable.
 			;
 	JSR &seek_var			; sets vcurl,h
-	48		; PHA		; 0 if record did not exist (new element)
+	PHA		; 0 if record did not exist (new element)
 			;
 	A0 00		; LDY #00	; save location counter value
 	A5 <locl	; LDA locl
 	91 <vcurl	; STA (vcurl),Y
-	C8		; INY
+	INY
 	A5 <loch	; LDA loch
 	91 <vcurl	; STA (vcurl),Y
 					; save variable name
 	A6 <cursor	; LDX cursor
 :set_var_loop
-	C8		; INY
+	INY
 	BD &line	; LDA line,X
 	91 <vcurl	; STA (vcurl),Y
-	E8		; INX
+	INX
 	JSR &is_token	; end of name?
-	B0 ~set_var_loop ; BCS set_var_loop
+	BCS ~set_var_loop
 			;
 	A9 00		; LDA #00	; null terminate name
 	91 <vcurl	; STA (vcurl),Y
-	C8		; INY
+	INY
 			;
 			; If we have extended the vtable, we must update the
 			; end pointer vnext.
 			;
-	68		; PLA
+	PLA
 	C9 00		; CMP #00
 	BEQ 01
 	RTS
@@ -700,7 +714,7 @@
 	18		; CLC
 	65 <vnextl	; ADC vnextl
 	85 <vnextl	; STA vnextl
-	90 02
+	BCC 02
 	E6 <vnexth	; INC vnexth
 	RTS
 
@@ -741,7 +755,7 @@
 	A0 02		; LDY #02
 :pv_name_loop
 	B1 <vcurl	; LDA (vcurl),Y
-	C8		; INY
+	INY
 	C9 00		; CMP #0
 	BEQ ~pv_end_of_name
 	JSR &putchar
@@ -754,7 +768,7 @@
 	18		; CLC
 	65 <vcurl	; ADC vcurl
 	85 <vcurl	; STA vcurl
-	90 02
+	BCC 02
 	E6 <vcurh	; INC vcurh
 	JMP &pv_loop
 
@@ -927,7 +941,7 @@
 	A9 " "		; LDA #" "
 	JSR &putchar
 	A4 00		; LDY 00
-	C8		; INY
+	INY
 	C0 80		; CPY #80
 	BNE ~hex_dump_loop
 	A9 0A		; LDA #'\n'
@@ -935,7 +949,7 @@
 	RTS
 
 :error
-	48		; PHA		; save error code
+	PHA		; save error code
 
 	A9 <sz_errline	; LDA #lo(sz_errline)
 	85 <putsl	; STA putsl
@@ -952,7 +966,7 @@
 	A9 >sz_errcode	; LDA #hi(sz_errcode)
 	85 <putsh	; STA putsh
 	JSR &puts
-	68		; PLA
+	PLA
 	JSR &printhex
 
 	A9 0A		; LDA #"\n"
