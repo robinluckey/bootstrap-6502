@@ -62,20 +62,29 @@ make it barely a language:
  - A label can be assigned from the current 16-bit location counter using the
    `:` pseudo-op.
 
- - The 16-bit value of a label can be inserted with the `&` pseudo-op.
+ - The 16-bit value of a label can be read with the `&` pseudo-op.
+   The `>` and `<` operators emit the high or low byte only.
 
  - An 8-bit relative offset to a label can be inserted with the `~` pseudo-op.
 
- - It supports comments, which must begin with `;` and end at the next newline
-   character.
+ - Comments must begin with `;` and extend to the end of a line.
 
- - It can emit a symbol table to allow forward label references.
+ - A double-quoted string will be inserted into the object code as ASCII bytes.
+   There is no support for escape sequences such as newline.
 
- - The assembler can recognize only a few mnemonics for which the addressing
-   mode is unambiguous -- either always implied or always absolute. For
-   example, the assembler accepts `JSR` and `RTS`, but cannot convert `LDA`
-   to an opcode because addressing mode detection is not yet implemented.
-   Most opcodes, therefore, must be entered by their hex codes.
+The assembler recognizes only a subset of the 6502 instruction set mnemonics:
+
+ - Opcodes that take no operands, such as `JSR` and `RTS` are allowed.
+
+ - Some immediate mode opcodes, such as `LDA #` and `CMP #` are recognized.
+   Be sure to include the space and the `#` character.
+
+All other addressing modes are unrecognized, and must be inserted using a hex code.
+The assembler will assume that these hex codes represent valid opcodes and will
+emit them into the object code stream.
+
+The assembler does nearly zero error checking. It is the programmer's responsibility
+to ensure the each instruction receives the correct number of operand bytes.
 
 ## Two-pass assembly process
 
