@@ -65,10 +65,9 @@
 	JMP &main_loop	; JUMP main_loop
 :exit
 	A5 <pass	; LDA pass
-	CMP #00
 	BNE 03
-;	JSR &dump_vtable
 	JSR &print_vtable
+;	JSR &dump_vtable
 	BRK
 
 :readline
@@ -628,8 +627,7 @@
 	A6 <cursor	; LDX cursor
 :seek_var_cmp_loop
 	B1 <vcurl	; LDA (vcurl),Y	; get next letter of name from vtable
-	CMP #00				; end of variable name?
-	BNE ~seek_var_cmp_char
+	BNE ~seek_var_cmp_char		; null terminator?
 	BD &line	; LDA line,X
 	JSR &is_token
 	BCC ~seek_var_found		; both variables ended -- match
@@ -670,7 +668,6 @@
 	JSR &incr_loc
 			;
 	A5 <pass	; LDA pass; which pass?
-	CMP #00
 	BEQ ~get_var_end
 
 	JSR &seek_var	; set vcurl,h
@@ -692,7 +689,6 @@
 	JSR &incr_loc
 			;
 	A5 <pass	; LDA pass
-	CMP #00
 	BEQ ~get_hi_end
 			;
 	JSR &seek_var	; sets vcurl,h
@@ -711,7 +707,6 @@
 	JSR &incr_loc
 
 	A5 <pass	; LDA pass
-	CMP #00
 	BEQ ~get_lo_end
 
 	JSR &seek_var	; sets vcurl,h
@@ -730,7 +725,6 @@
 			; instructions).
 	JSR &incr_loc
 	A5 <pass	; LDA pass
-	CMP #00
 	BNE 01
 	RTS
 
@@ -779,7 +773,6 @@
 			; end pointer vnext.
 			;
 	PLA
-	CMP #00
 	BEQ 01
 	RTS
 	98		; TYA		; update vnext
