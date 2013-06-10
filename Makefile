@@ -1,3 +1,5 @@
+all : test examples
+
 test : g0 g1
 	diff g0 g1
 

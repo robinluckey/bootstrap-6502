@@ -8,34 +8,34 @@
 *1000	; Programs must begin at 0x1000
 
 :main
-			;		; print prompt
-	A9 <prompt	; LDA lo(&A)
+			; print prompt
+	LDA #<prompt
 	85 00		; STA 00
-	A9 >prompt	; LDA hi(&A)
+	LDA #>prompt
 	85 01		; STA 01
 	JSR &puts
-			;		; get name
-	A9 <name		; LDA lo(&S)
+			; get name
+	LDA #<name	; LDA lo(&S)
 	85 00		; STA 00
-	A9 >name		; LDA hi(&S)
+	LDA #>name	; LDA hi(&S)
 	85 01		; STA 01
 	JSR &gets
-			;		; print "Hello, "
-	A9 <hello	; LDA lo(&H)
+			; print "Hello, "
+	LDA #<hello
 	85 00		; STA 00
-	A9 >hello	; LDA hi(&H)
+	LDA #>hello
 	85 01		; STA 01
 	JSR &puts
-			;		; print name
-	A9 <name	; LDA lo(&S)
+			; print name
+	LDA #<name
 	85 00		; STA 00
-	A9 >name	; LDA hi(&S)
+	LDA #>name
 	85 01		; STA 01
 	JSR &puts
-			;		; print "!\n"
-	A9 <end		; LDA lo(&Z)
+			; print "!\n"
+	LDA #<end
 	85 00		; STA 00
-	A9 >end		; LDA hi(&Z)
+	LDA #>end
 	85 01		; STA 01
 	JSR &puts
 	BRK
@@ -43,10 +43,10 @@
 :gets
 	; Input memory 00-01 must point to a string buffer
 	; Gets at most 256 characters (including null terminator).
-	A0 #00		; LDY #00
+	A0 #00
 :gets_loop
 	JSR &getchar
-	C9 #0A		; CMP #'\n'
+	CMP #0A		; CMP #'\n'
 	BEQ 07
 	91 00		; STA (00),Y
 	INY
@@ -54,17 +54,17 @@
 			;		; fall through if out of bounds
 	A0 #FF		; LDY #FF	; terminate at max 256th byte
 			;		; append null terminator
-	A9 #00		; LDA #0
+	LDA #00
 	91 00		; STA (00),Y
 	RTS
 
 :puts
 	; Input memory 00-01 must point to null-terminated string.
 	; At most 256 bytes will be printed.
-	A0 #00		; LDY #00
+	A0 #00
 :puts_loop
 	B1 00		; LDA (00),Y
-	C9 #00		; CMP #0
+	CMP #00
 	BNE 01
 	RTS
 	JSR &putchar

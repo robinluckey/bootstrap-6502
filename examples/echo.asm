@@ -11,7 +11,7 @@
 
 :main
 	JSR &getchar
-	C9 #FF		; CMP #EOF?
+	CMP #<eof
 	BNE 01
 	BRK
 	JSR &putchar

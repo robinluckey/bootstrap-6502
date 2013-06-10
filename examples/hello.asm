@@ -7,20 +7,18 @@
 
 *1000	; Programs must begin at 0x1000
 
-:main					; 1000
-	A9 #00		; LDA #00
-	TAX
+:main
+	LDX #00
 
-:loop					; 1003
+:loop
 	BD &hello	; LDA hello, X
-	C9 #00		; CMP #0
 	BNE 01
 	BRK
 	JSR &putchar
 	INX
 	BNE ~loop
 
-:hello					; 1011
+:hello
 	_	"Hello, World!"
 	_	0A	; newline
 	_	00	; null terminator

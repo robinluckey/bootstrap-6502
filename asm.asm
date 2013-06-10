@@ -61,7 +61,7 @@
 	BEQ ~exit
 	JSR &parse
 	JSR &eval
-;	JSR &show
+	;JSR &show
 	JMP &main_loop	; JUMP main_loop
 :exit
 	A5 <pass	; LDA pass
@@ -243,7 +243,7 @@
 	; then advance the operand cursor to skip it.
 	A4 <operand	; LDY operand
 	BNE ~eval_am_immed
-	A9 #<am_immed	; LDA #am_none
+	A9 #<am_none	; LDA #am_none
 	85 <addrmode	; STA addrmode
 	RTS
 :eval_am_immed
@@ -289,10 +289,29 @@
 	RTS
 
 :lookup_mnemonic
-	A9 <mtable	; LDA lo(mtable)
+	; Check for instructions whose opcode does not depend on operand
+	A9 #<mtable_const ; LDA #lo(mtable_const)
 	85 <mcurl	; STA mcurl
-	A9 >mtable	; LDA hi(mtable)
+	A9 #>mtable_const ; LDA #hi(mtable_const)
 	85 <mcurh	; STA mcurh
+	JSR &lookup_mnem_inner
+	BCC 01		; not found, keep looking
+	RTS
+
+	; Failing that, check for immediate-mode instructions
+	A5 <addrmode	; LDA addrmode
+	C9 #<am_immed	; CMP am_immed
+	BEQ 02
+	CLC		; return false
+	RTS
+	A9 #<mtable_immed ; LDA #lo(mtable_immed)
+	85 <mcurl	; STA mcurl
+	A9 #>mtable_immed ; LDA #hi(mtable_immed)
+	85 <mcurh	; STA mcurh
+	JSR &lookup_mnem_inner
+	RTS
+
+:lookup_mnem_inner
 :lm_each_elem
 	A0 #00		; LDY #00
 	A6 <cursor	; LDX cursor
@@ -324,7 +343,7 @@
 	CLC		; return false
 	RTS
 
-:mtable
+:mtable_const		; constant opcodes (do not depend on operands)
 	_ "BCC"
 	_ 90
 	_ "BCS"
@@ -361,7 +380,17 @@
 	_ AA
 	_ "TAY"
 	_ A8
+	_ 00		; null terminator
 
+:mtable_immed		; opcodes with immediate mode operand
+	_ "CMP"
+	_ C9
+	_ "LDA"
+	_ A9
+	_ "LDX"
+	_ A2
+	_ "LDY"
+	_ A0
 	_ 00		; null terminator
 
 :emit_opcode
