@@ -43,28 +43,28 @@
 :gets
 	; Input memory 00-01 must point to a string buffer
 	; Gets at most 256 characters (including null terminator).
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 :gets_loop
 	JSR &getchar
-	C9 0A		; CMP #'\n'
+	C9 #0A		; CMP #'\n'
 	BEQ 07
 	91 00		; STA (00),Y
 	INY
 	D0 ~gets_loop	; BNE gets_loop
 			;		; fall through if out of bounds
-	A0 FF		; LDY #FF	; terminate at max 256th byte
+	A0 #FF		; LDY #FF	; terminate at max 256th byte
 			;		; append null terminator
-	A9 00		; LDA #0
+	A9 #00		; LDA #0
 	91 00		; STA (00),Y
 	RTS
 
 :puts
 	; Input memory 00-01 must point to null-terminated string.
 	; At most 256 bytes will be printed.
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 :puts_loop
 	B1 00		; LDA (00),Y
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BNE 01
 	RTS
 	JSR &putchar

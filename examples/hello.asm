@@ -8,12 +8,12 @@
 *1000	; Programs must begin at 0x1000
 
 :main					; 1000
-	A9 00		; LDA #00
+	A9 #00		; LDA #00
 	TAX
 
 :loop					; 1003
 	BD &hello	; LDA hello, X
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BNE 01
 	BRK
 	JSR &putchar

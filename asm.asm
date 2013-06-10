@@ -22,6 +22,13 @@
 *0096	:linel		; line number
 *0097	:lineh		;
 
+*0098	:addrmode	; opcode addressing mode
+	; enum constants
+	*0000	:am_none	; no operand (implied or register)
+	*0001	:am_immed	; immediate
+	*0002	:am_rel		; relative
+	*00FF	:am_unknown
+
 *00A0	:putsl		; address of string argument to puts
 *00A1	:putsh
 
@@ -39,7 +46,7 @@
 
 :main
 :init
-	A9 00		; LDA #00
+	A9 #00		; LDA #00
 	85 <linel	; STA linel
 	85 <lineh	; STA lineh
 	85 <pass	; STA pass
@@ -50,7 +57,7 @@
 
 :main_loop
 	JSR &readline
-	C9 FF		; CMP #eof
+	C9 #FF		; CMP #eof
 	BEQ ~exit
 	JSR &parse
 	JSR &eval
@@ -58,7 +65,7 @@
 	JMP &main_loop	; JUMP main_loop
 :exit
 	A5 <pass	; LDA pass
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BNE 03
 ;	JSR &dump_vtable
 	JSR &print_vtable
@@ -69,25 +76,25 @@
 	BCC 02
 	E6 <lineh	; INC lineh
 			;
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 	99 &line	; STA line,Y	; length 0 by default
 :readline_loop
 	JSR &getchar
-	C9 FF		; CMP #eof
+	C9 #FF		; CMP #eof
 	BNE 01
 	RTS
 	INY
 	99 &line	; STA line,Y
-	C9 0A		; CMP #'\n'
+	C9 #0A		; CMP #'\n'
 	BNE ~readline_loop
 	8C &line	; STY line
 	RTS
 
 :parse
-	A9 00		; LDA #00
+	A9 #00		; LDA #00
 	85 <cursor	; STA cursor	; reset cursor beginning of line
 
-	A9 00		; LDA #00
+	A9 #00		; LDA #00
 	85 <org		; STA org
 	85 <label	; STA label
 	85 <mnemonic	; STA mnemonic
@@ -108,7 +115,7 @@
 	B9 &line	; LDA line,Y
 	JSR &is_white
 	BCS ~find_org_begin
-	C9 "*"		; CMP #'*'
+	C9 #"*"		; CMP #'*'
 	BNE ~find_org_exit
 	84 <org		; STY org
 :find_org_end				; seek to end of token
@@ -128,7 +135,7 @@
 	B9 &line	; LDA line,Y
 	JSR &is_white
 	BCS ~find_label_begin
-	C9 ":"		; CMP #':'
+	C9 #":"		; CMP #':'
 	BNE ~find_label_exit
 	84 <label	; STY label
 :find_label_end				; seek to end of token
@@ -188,13 +195,13 @@
 	B9 &line	; LDA line,Y
 	JSR &is_white
 	BCS ~find_comment_begin
-	C9 ";"		; CMP #';'
+	C9 #";"		; CMP #';'
 	BCC ~find_comment_exit
 	84 <comment	; STY comment
 :find_comment_end			; seek to end of line
 	INY
 	B9 &line	; LDA line,Y
-	C9 0A		; CMP #'\n'
+	C9 #0A		; CMP #'\n'
 	BCS ~find_comment_end
 	DEY		; "unconsume" newline character
 	84 <cursor	; STY cursor
@@ -204,6 +211,7 @@
 :eval
 	JSR &eval_org
 	JSR &eval_label
+	JSR &eval_addrmode
 	JSR &eval_mnemonic
 	JSR &eval_operand
 	RTS
@@ -229,6 +237,28 @@
 	JSR &set_var
 	RTS
 
+:eval_addrmode
+	; Look ahead to the operand to deduce the addressing mode.
+	; If the addressing mode has leading syntax (such as '#')
+	; then advance the operand cursor to skip it.
+	A4 <operand	; LDY operand
+	BNE ~eval_am_immed
+	A9 #<am_immed	; LDA #am_none
+	85 <addrmode	; STA addrmode
+	RTS
+:eval_am_immed
+	B9 &line	; LDA line,Y
+	C9 #"#"		; CMP #'#'
+	BNE ~eval_am_unknown
+	A9 #<am_immed	; LDA #am_immed
+	85 <addrmode	; STA addrmode
+	E6 <operand	; INC <operand
+	RTS
+:eval_am_unknown
+	A9 #<am_unknown	; LDA #am_unknown
+	85 <addrmode	; STA addrmode
+	RTS
+
 :eval_mnemonic
 	A4 <mnemonic	; LDY mnemonic
 	BNE 01
@@ -244,12 +274,12 @@
 	B9 &line	; LDA line,Y
 	E6 <cursor	; INC <cursor
 
-	C9 "P"		; CMP #'P'
+	C9 #"P"		; CMP #'P'
 	BNE 04
 	JSR &set_pass
 	RTS
 
-	C9 "_"		; CMP #'_'	; no-op
+	C9 #"_"		; CMP #'_'	; no-op
 	BNE 01
 	RTS
 
@@ -264,7 +294,7 @@
 	A9 >mtable	; LDA hi(mtable)
 	85 <mcurh	; STA mcurh
 :lm_each_elem
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 	A6 <cursor	; LDX cursor
 :lm_each_char
 	B1 <mcurl	; LDA (mcurl),Y
@@ -273,7 +303,7 @@
 	BNE ~lm_miss
 	INX
 	INY
-	C0 03		; CPY #03
+	C0 #03		; CPY #03
 	BCC ~lm_each_char
 ;lm_found
 	SEC		; return true
@@ -281,14 +311,14 @@
 :lm_miss
 	A5 <mcurl	; LDA mcurl
 	CLC
-	69 04		; ADC #04	; sizeof(mtable element)
+	69 #04		; ADC #04	; sizeof(mtable element)
 	85 <mcurl	; STA mcurl
 	A5 <mcurh	; LDA mcurh
-	69 00		; ADC #00
+	69 #00		; ADC #00
 	85 <mcurh	; STA mcurl
 	JMP &lm_each_elem
 :lm_not_found
-	A9 00		; LDA #00
+	A9 #00		; LDA #00
 	85 <mcurl	; STA mcurl
 	85 <mcurh	; STA mcurh
 	CLC		; return false
@@ -335,7 +365,7 @@
 	_ 00		; null terminator
 
 :emit_opcode
-	A0 03		; LDY #3
+	A0 #03		; LDY #3
 	B1 <mcurl	; LDA (mcurl),Y
 	JSR &emit
 	JSR &incr_loc
@@ -354,32 +384,32 @@
 	84 <cursor	; STY <cursor
 	E6 <cursor	; INC <cursor
 
-	C9 "&"		; CMP #'&'
+	C9 #"&"		; CMP #'&'
 	BNE 04
 	JSR &get_var
 	RTS
 
-	C9 ">"		; CMP #'>'
+	C9 #">"		; CMP #'>'
 	BNE 04
 	JSR &get_hi
 	RTS
 
-	C9 "<"		; CMP #'<'
+	C9 #"<"		; CMP #'<'
 	BNE 04
 	JSR &get_lo
 	RTS
 
-	C9 "~"		; CMP #'~'
+	C9 #"~"		; CMP #'~'
 	BNE 04
 	JSR &get_rel_var
 	RTS
 
-	C9 22		; CMP #'"'
+	C9 #22		; CMP #'"'
 	BNE 04
 	JSR &string_literal
 	RTS
 
-	C9 "-"		; CMP #'-'
+	C9 #"-"		; CMP #'-'
 	BNE 04
 	JSR &twos_comp
 	RTS
@@ -397,10 +427,10 @@
 					; hi nibble
 	B9 &line	; LDA line,Y
 	INY
-	C9 3A		; CMP #3A
+	C9 #3A		; CMP #3A
 	BCC 02
-	69 F8		; ADC #F8
-	29 0F		; AND #0F
+	69 #F8		; ADC #F8
+	29 #0F		; AND #0F
 	0A		; ASL A
 	0A		; ASL A
 	0A		; ASL A
@@ -409,10 +439,10 @@
 					; lo nibble
 	B9 &line	; LDA line,Y
 	INY
-	C9 3A		; CMP #3A
+	C9 #3A		; CMP #3A
 	BCC 02
-	69 F8		; ADC #F8
-	29 0F		; AND #0F
+	69 #F8		; ADC #F8
+	29 #0F		; AND #0F
 	05 00		; ORA 00
 
 	84 <cursor	; STY cursor
@@ -427,7 +457,7 @@
 :emit
 	PHA
 	A5 <pass	; LDA pass
-	C9 01		; CMP #1
+	C9 #01		; CMP #1
 	BNE 05
 	PLA
 	JSR &putchar
@@ -439,7 +469,7 @@
 	A4 <cursor	; LDY cursor
 	B9 &line	; LDA line,Y
 	E6 <cursor	; INC cursor
-	C9 22		; CMP #'"'
+	C9 #22		; CMP #'"'
 	BNE 01
 	RTS
 	JSR &emit
@@ -463,15 +493,15 @@
 	; Read a hex byte from cursor position, then emit
 	; its negation
 	JSR &parsehex
-	49 FF		; EOR #FF
+	49 #FF		; EOR #FF
 	CLC
-	69 01		; ADC #1
+	69 #01		; ADC #1
 	JSR &emit
 	JSR &incr_loc
 	RTS
 
 :puts
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 :puts_loop
 	B1 <putsl	; LDA (putsl),Y
 	BNE 01
@@ -482,15 +512,15 @@
 	BRK		; error -- string too long
 
 :is_token
-	C9 " "		; CMP #' '
+	C9 #" "		; CMP #' '
 	BEQ ~is_token_f
-	C9 09		; CMP #'\t'
+	C9 #09		; CMP #'\t'
 	BEQ ~is_token_f
-	C9 0A		; CMP #'\n'
+	C9 #0A		; CMP #'\n'
 	BEQ ~is_token_f
-	C9 ";"		; CMP #';'
+	C9 #";"		; CMP #';'
 	BEQ ~is_token_f
-	C9 00		; CMP #00
+	C9 #00		; CMP #00
 	BEQ ~is_token_f
 	SEC		; true
 	RTS
@@ -499,9 +529,9 @@
 	RTS
 
 :is_white
-	C9 " "		; CMP #' '
+	C9 #" "		; CMP #' '
 	BEQ ~is_white_t
-	C9 09		; CMP #'\t'
+	C9 #09		; CMP #'\t'
 	BEQ ~is_white_t
 	CLC		; false
 	RTS
@@ -520,7 +550,7 @@
 	B9 &hex_digits	; LDA hex_digits,Y
 	JSR &putchar
 	8A		; TXA		; restore
-	29 0F		; AND #0F	; low order nibble
+	29 #0F		; AND #0F	; low order nibble
 	A8				; lookup hex char
 	CLC
 	B9 &hex_digits	; LDA hex_digits,Y
@@ -539,9 +569,9 @@
 			; end of the vtable. The caller may append a new value
 			; here.
 			;
-	A9 <vtable	; LDA #lo(vtable); begin at top of vtable
+	A9 #<vtable	; LDA #lo(vtable); begin at top of vtable
 	85 <vcurl	; STA vcurl
-	A9 >vtable	; LDA #hi(vtable)
+	A9 #>vtable	; LDA #hi(vtable)
 	85 <vcurh	; STA vcurh
 :seek_var_each
 	A5 <vcurl	; LDA vcurl	; reached end of vtable?
@@ -551,7 +581,7 @@
 	C5 <vnexth	; CMP vnexth
 	BEQ ~seek_var_not_found
 :seek_var_cmp
-	A0 02		; LDY #2	; vtable name follows 2-byte address
+	A0 #02		; LDY #2	; vtable name follows 2-byte address
 	A6 <cursor	; LDX cursor
 :seek_var_cmp_loop
 	B1 <vcurl	; LDA (vcurl),Y	; get next letter of name from vtable
@@ -571,7 +601,7 @@
 :seek_var_end
 	B1 <vcurl	; LDA (vcurl),Y	; seek to end of unmatched name
 	INY
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BNE ~seek_var_end
 :seek_var_next
 	98		; TYA		; move vcur to next variable in vtable
@@ -582,10 +612,10 @@
 	E6 <vcurh	; INC 01
 	BNE ~seek_var_each
 :seek_var_not_found
-	A9 00		; LDA #00	; variable does not exist
+	A9 #00		; LDA #00	; variable does not exist
 	RTS
 :seek_var_found
-	A9 01		; LDA #01	; variable exists
+	A9 #01		; LDA #01	; variable exists
 	RTS
 
 :get_var		; Reads variable name from cursor position, then...
@@ -597,18 +627,18 @@
 	JSR &incr_loc
 			;
 	A5 <pass	; LDA pass; which pass?
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BEQ ~get_var_end
 
 	JSR &seek_var			; set vcurl,h
 	BNE 05				; check return result
-	A9 01		; LDA #01	; errcode 1 == variable not found
+	A9 #01		; LDA #01	; errcode 1 == variable not found
 	JMP &error
 
-	A0 00		; LDY #00	; lo value
+	A0 #00		; LDY #00	; lo value
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &emit
-	A0 01		; LDY #01	; hi value
+	A0 #01		; LDY #01	; hi value
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &emit
 :get_var_end
@@ -619,15 +649,15 @@
 	JSR &incr_loc
 			;
 	A5 <pass	; LDA pass
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BEQ ~get_hi_end
 			;
 	JSR &seek_var			; sets vcurl,h
 	BNE 05				; check return result
-	A9 01		; LDA #01	; errcode 1 == variable not found
+	A9 #01		; LDA #01	; errcode 1 == variable not found
 	JMP &error
 
-	A0 01		; LDY #01	; hi value
+	A0 #01		; LDY #01	; hi value
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &emit
 :get_hi_end
@@ -638,15 +668,15 @@
 	JSR &incr_loc
 			;
 	A5 <pass	; LDA pass
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BEQ ~get_lo_end
 			;
 	JSR &seek_var			; sets vcurl,h
 	BNE 05				; check return result
-	A9 01		; LDA #01	; errcode 1 == variable not found
+	A9 #01		; LDA #01	; errcode 1 == variable not found
 	JMP &error
 
-	A0 00		; LDY #00	; lo value
+	A0 #00		; LDY #00	; lo value
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &emit
 :get_lo_end
@@ -657,16 +687,16 @@
 			; instructions).
 	JSR &incr_loc
 	A5 <pass	; LDA pass
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BNE 01
 	RTS
 			;
 	JSR &seek_var			; sets vcurl,h
 	BNE 05				; check return result
-	A9 01		; LDA #01	; errcode 1 == variable not found
+	A9 #01		; LDA #01	; errcode 1 == variable not found
 	JMP &error
 
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 	B1 <vcurl	; LDA (vcurl),Y
 	SEC				; compute (pv) - (loc), low byte only
 	E5 <locl	; SBC locl
@@ -682,7 +712,7 @@
 	JSR &seek_var			; sets vcurl,h
 	PHA				; 0 if record did not exist (new element)
 
-	A0 00		; LDY #00	; save location counter value
+	A0 #00		; LDY #00	; save location counter value
 	A5 <locl	; LDA locl
 	91 <vcurl	; STA (vcurl),Y
 	INY
@@ -698,7 +728,7 @@
 	JSR &is_token	; end of name?
 	BCS ~set_var_loop
 			;
-	A9 00		; LDA #00	; null terminate name
+	A9 #00		; LDA #00	; null terminate name
 	91 <vcurl	; STA (vcurl),Y
 	INY
 			;
@@ -706,7 +736,7 @@
 			; end pointer vnext.
 			;
 	PLA
-	C9 00		; CMP #00
+	C9 #00		; CMP #00
 	BEQ 01
 	RTS
 	98		; TYA		; update vnext
@@ -718,11 +748,11 @@
 	RTS
 
 :print_vtable
-	A9 "P"		; LDA #"P"
+	A9 #"P"		; LDA #"P"
 	JSR &putchar
-	A9 01		; LDA #1
+	A9 #01		; LDA #1
 	JSR &printhex
-	A9 0A		; LDA #"\n"
+	A9 #0A		; LDA #"\n"
 	JSR &putchar
 			;
 	A9 <vtable	; LDA lo(vtable)
@@ -738,30 +768,30 @@
 	BNE 01
 	RTS
 
-	A9 "*"		; LDA #"*"
+	A9 #"*"		; LDA #"*"
 	JSR &putchar
-	A0 01		; LDY #01	; print address -- high byte first!
+	A0 #01		; LDY #01	; print address -- high byte first!
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &printhex
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 	B1 <vcurl	; LDA (vcurl),Y
 	JSR &printhex
-	A9 " "		; LDA #" "
+	A9 #" "		; LDA #" "
 	JSR &putchar
-	A9 ":"		; LDA #":"
+	A9 #":"		; LDA #":"
 	JSR &putchar
 
-	A0 02		; LDY #02
+	A0 #02		; LDY #02
 :pv_name_loop
 	B1 <vcurl	; LDA (vcurl),Y
 	INY
-	C9 00		; CMP #0
+	C9 #00		; CMP #0
 	BEQ ~pv_end_of_name
 	JSR &putchar
 	BNE ~pv_name_loop
 	BRK		; error -- variable name too long
 :pv_end_of_name
-	A9 0A		; LDA #"\n"
+	A9 #0A		; LDA #"\n"
 	JSR &putchar
 	98		; TYA
 	CLC
@@ -782,14 +812,15 @@
 ;	JSR &show_comment
 ;	JSR &show_vnext
 	JSR &show_mcur
-	A9 0A		; LDA #'\n'
+	JSR &show_addrmode
+	A9 #0A		; LDA #'\n'
 	JSR &putchar
 	RTS
 
 :show_line
-	A9 <sz_line	; LDA #lo(sz_line)
+	A9 #<sz_line	; LDA #lo(sz_line)
 	85 <putsl	; STA putsl
-	A9 >sz_line	; LDA #hi(sz_line)
+	A9 #>sz_line	; LDA #hi(sz_line)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <lineh	; LDA lineh
@@ -799,9 +830,9 @@
 	RTS
 
 :show_pass
-	A9 <sz_pass	; LDA #lo(sz_pass)
+	A9 #<sz_pass	; LDA #lo(sz_pass)
 	85 <putsl	; STA putsl
-	A9 >sz_pass	; LDA #hi(sz_pass)
+	A9 #>sz_pass	; LDA #hi(sz_pass)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <pass	; LDA pass
@@ -809,9 +840,9 @@
 	RTS
 
 :show_loc
-	A9 <sz_loc	; LDA #lo(sz_loc)
+	A9 #<sz_loc	; LDA #lo(sz_loc)
 	85 <putsl	; STA putsl
-	A9 >sz_loc	; LDA #hi(sz_loc)
+	A9 #>sz_loc	; LDA #hi(sz_loc)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <loch	; LDA loch
@@ -821,9 +852,9 @@
 	RTS
 
 :show_org
-	A9 <sz_org	; LDA #lo(sz_org)
+	A9 #<sz_org	; LDA #lo(sz_org)
 	85 <putsl	; STA putsl
-	A9 >sz_org	; LDA #hi(sz_org)
+	A9 #>sz_org	; LDA #hi(sz_org)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <org		; LDA org
@@ -831,9 +862,9 @@
 	RTS
 
 :show_label
-	A9 <sz_label	; LDA #lo(sz_label)
+	A9 #<sz_label	; LDA #lo(sz_label)
 	85 <putsl	; STA putsl
-	A9 >sz_label	; LDA #hi(sz_label)
+	A9 #>sz_label	; LDA #hi(sz_label)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <label	; LDA label
@@ -841,9 +872,9 @@
 	RTS
 
 :show_mnemonic
-	A9 <sz_mnemonic	; LDA #lo(sz_mnemonic)
+	A9 #<sz_mnemonic ; LDA #lo(sz_mnemonic)
 	85 <putsl	; STA putsl
-	A9 >sz_mnemonic	; LDA #hi(sz_mnemonic)
+	A9 #>sz_mnemonic ; LDA #hi(sz_mnemonic)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <mnemonic	; LDA mnemonic
@@ -851,9 +882,9 @@
 	RTS
 
 :show_operand
-	A9 <sz_operand	; LDA #lo(sz_operand)
+	A9 #<sz_operand	; LDA #lo(sz_operand)
 	85 <putsl	; STA putsl
-	A9 >sz_operand	; LDA #hi(sz_operand)
+	A9 #>sz_operand	; LDA #hi(sz_operand)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <operand	; LDA operand
@@ -861,9 +892,9 @@
 	RTS
 
 :show_comment
-	A9 <sz_comment	; LDA #lo(sz_comment)
+	A9 #<sz_comment	; LDA #lo(sz_comment)
 	85 <putsl	; STA putsl
-	A9 >sz_comment	; LDA #hi(sz_comment)
+	A9 #>sz_comment	; LDA #hi(sz_comment)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <comment	; LDA comment
@@ -871,9 +902,9 @@
 	RTS
 
 :show_vnext
-	A9 <sz_vnext	; LDA #lo(sz_vnext)
+	A9 #<sz_vnext	; LDA #lo(sz_vnext)
 	85 <putsl	; STA putsl
-	A9 >sz_vnext	; LDA #hi(sz_vnext)
+	A9 #>sz_vnext	; LDA #hi(sz_vnext)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <vnexth	; LDA vnexth
@@ -883,14 +914,24 @@
 	RTS
 
 :show_mcur
-	A9 <sz_mcur	; LDA #lo(sz_mcur)
+	A9 #<sz_mcur	; LDA #lo(sz_mcur)
 	85 <putsl	; STA putsl
-	A9 >sz_mcur	; LDA #hi(sz_mcur)
+	A9 #>sz_mcur	; LDA #hi(sz_mcur)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <mcurh	; LDA mcurh
 	JSR &printhex
 	A5 <mcurl	; LDA mcurl
+	JSR &printhex
+	RTS
+
+:show_addrmode
+	A9 #<sz_addrmode ; LDA #lo(sz_addrmode)
+	85 <putsl	; STA putsl
+	A9 #>sz_addrmode ; LDA #hi(sz_addrmode)
+	85 <putsh	; STA putsh
+	JSR &puts
+	A5 <addrmode	; LDA addrmode
 	JSR &printhex
 	RTS
 
@@ -914,13 +955,15 @@
 		_ 00
 :sz_mcur	_ "  mcur:"
 		_ 00
+:sz_addrmode	_ "  mode:"
+		_ 00
 
 :hex_digits _ "0123456789ABCDEF"
 
 :dump_vtable
-	A9 <vtable	; LDA #lo(vtable)
+	A9 #<vtable	; LDA #lo(vtable)
 	85 <putsl	; STA putsl
-	A9 >vtable	; LDA #hi(vtable)
+	A9 #>vtable	; LDA #hi(vtable)
 	85 <putsh	; STA putsh
 	JSR &hex_dump
 	RTS
@@ -930,29 +973,29 @@
 	JSR &printhex
 	A5 <putsl	; LDA putsh
 	JSR &printhex
-	A9 ":"		; LDA #":'
+	A9 #":"		; LDA #":'
 	JSR &putchar
-	A0 00		; LDY #00
+	A0 #00		; LDY #00
 :hex_dump_loop
 	B1 <putsl	; LDA (putsl),Y
 	84 00		; STY 00
 	JSR &printhex
-	A9 " "		; LDA #" "
+	A9 #" "		; LDA #" "
 	JSR &putchar
 	A4 00		; LDY 00
 	INY
-	C0 80		; CPY #80
+	C0 #80		; CPY #80
 	BNE ~hex_dump_loop
-	A9 0A		; LDA #'\n'
+	A9 #0A		; LDA #'\n'
 	JSR &putchar
 	RTS
 
 :error
 	PHA		; save error code
 
-	A9 <sz_errline	; LDA #lo(sz_errline)
+	A9 #<sz_errline	; LDA #lo(sz_errline)
 	85 <putsl	; STA putsl
-	A9 >sz_errline	; LDA #hi(sz_errline)
+	A9 #>sz_errline	; LDA #hi(sz_errline)
 	85 <putsh	; STA putsh
 	JSR &puts
 	A5 <lineh	; LDA lineh
@@ -960,15 +1003,15 @@
 	A5 <linel	; LDA linel
 	JSR &printhex
 
-	A9 <sz_errcode	; LDA #lo(sz_errcode)
+	A9 #<sz_errcode	; LDA #lo(sz_errcode)
 	85 <putsl	; STA putsl
-	A9 >sz_errcode	; LDA #hi(sz_errcode)
+	A9 #>sz_errcode	; LDA #hi(sz_errcode)
 	85 <putsh	; STA putsh
 	JSR &puts
 	PLA
 	JSR &printhex
 
-	A9 0A		; LDA #"\n"
+	A9 #0A		; LDA #"\n"
 	JSR &putchar
 	BRK
 
