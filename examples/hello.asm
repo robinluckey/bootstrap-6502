@@ -19,6 +19,4 @@
 	BNE ~loop
 
 :hello
-	_	"Hello, World!"
-	_	0A	; newline
-	_	00	; null terminator
+	_	"Hello, World!\n\0"

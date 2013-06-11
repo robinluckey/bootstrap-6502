@@ -70,7 +70,6 @@ make it barely a language:
  - Comments must begin with `;` and extend to the end of a line.
 
  - A double-quoted string will be inserted into the object code as ASCII bytes.
-   There is no support for escape sequences such as newline.
 
 The assembler recognizes only a subset of the 6502 instruction set mnemonics:
 

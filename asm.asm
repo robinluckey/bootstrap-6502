@@ -84,7 +84,7 @@
 	RTS
 	INY
 	99 &line	; STA line,Y
-	CMP #0A		; CMP #'\n'
+	CMP #"\n"
 	BNE ~readline_loop
 	8C &line	; STY line
 	RTS
@@ -200,7 +200,7 @@
 :find_comment_end			; seek to end of line
 	INY
 	B9 &line	; LDA line,Y
-	CMP #0A		; CMP #'\n'
+	CMP #"\n"
 	BCS ~find_comment_end
 	DEY		; "unconsume" newline character
 	84 <cursor	; STY cursor
@@ -511,9 +511,27 @@
 	A4 <cursor	; LDY cursor
 	B9 &line	; LDA line,Y
 	E6 <cursor	; INC cursor
-	CMP #22		; CMP #'"'
+	CMP #"\""
 	BNE 01
 	RTS
+	CMP #"\\"
+	BNE ~string_letter
+	A4 <cursor	; LDY cursor	; escape sequence
+	B9 &line	; LDA line,Y
+	E6 <cursor	; INC cursor
+	CMP #"n"
+	BNE 02
+	LDA #0A
+	CMP #"t"
+	BNE 02
+	LDA #09
+	CMP #"0"
+	BNE 02
+	LDA #00
+	; Anything else (including '\' or '"'), just fall through
+	; and print whatever followed the original '\'.
+	; Note that this (correctly) prevents \" from terminating a string.
+:string_letter
 	JSR &emit
 	JSR &incr_loc
 	JMP &string_literal
@@ -556,9 +574,9 @@
 :is_token
 	CMP #" "
 	BEQ ~is_token_f
-	CMP #09		; CMP #'\t'
+	CMP #"\t"
 	BEQ ~is_token_f
-	CMP #0A		; CMP #'\n'
+	CMP #"\n"
 	BEQ ~is_token_f
 	CMP #";"
 	BEQ ~is_token_f
@@ -788,7 +806,7 @@
 	JSR &putchar
 	LDA #01
 	JSR &printhex
-	LDA #0A
+	LDA #"\n"
 	JSR &putchar
 
 	LDA #<vtable
@@ -827,7 +845,7 @@
 	BNE ~pv_name_loop
 	BRK		; error -- variable name too long
 :pv_end_of_name
-	LDA #0A
+	LDA #"\n"
 	JSR &putchar
 	98		; TYA
 	CLC
@@ -849,7 +867,7 @@
 ;	JSR &show_vnext
 	JSR &show_mcur
 	JSR &show_addrmode
-	LDA #0A
+	LDA #"\n"
 	JSR &putchar
 	RTS
 
@@ -971,28 +989,17 @@
 	JSR &printhex
 	RTS
 
-:sz_line	_ "; line:"
-		_ 00
-:sz_pass	_ "  pass:"
-		_ 00
-:sz_loc		_ "  loc:"
-		_ 00
-:sz_org		_ "  org:"
-		_ 00
-:sz_label	_ "  label:"
-		_ 00
-:sz_mnemonic	_ "  mnem:"
-		_ 00
-:sz_operand	_ "  oper:"
-		_ 00
-:sz_comment	_ "  comment:"
-		_ 00
-:sz_vnext	_ "  vnext:"
-		_ 00
-:sz_mcur	_ "  mcur:"
-		_ 00
-:sz_addrmode	_ "  mode:"
-		_ 00
+:sz_line	_ "; line:\0"
+:sz_pass	_ "  pass:\0"
+:sz_loc		_ "  loc:\0"
+:sz_org		_ "  org:\0"
+:sz_label	_ "  label:\0"
+:sz_mnemonic	_ "  mnem:\0"
+:sz_operand	_ "  oper:\0"
+:sz_comment	_ "  comment:\0"
+:sz_vnext	_ "  vnext:\0"
+:sz_mcur	_ "  mcur:\0"
+:sz_addrmode	_ "  mode:\0"
 
 :hex_digits _ "0123456789ABCDEF"
 
@@ -1022,7 +1029,7 @@
 	INY
 	CPY #80
 	BNE ~hex_dump_loop
-	LDA #0A
+	LDA #"\n"
 	JSR &putchar
 	RTS
 
@@ -1047,9 +1054,9 @@
 	PLA
 	JSR &printhex
 
-	LDA #0A
+	LDA #"\n"
 	JSR &putchar
 	BRK
 
-:sz_errline _ "Line:" 00
-:sz_errcode _ "  Error:" 00
+:sz_errline _ "Line:\0"
+:sz_errcode _ "  Error:\0"

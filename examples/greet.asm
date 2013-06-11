@@ -72,16 +72,8 @@
 	BNE ~puts_loop	; BNE puts_loop
 	RTS
 
-:prompt	_	"What is your name?"
-	_	0A ; newline
-	_	00 ; null terminator
-
-:hello	_	"Hello, "
-	_	00 ; null terminator
-
-:end	_	"!"
-	_	0A ; newline
-	_	00 ; null terminator
-
+:prompt	_	"What is your name?\n\0"
+:hello	_	"Hello, \0"
+:end	_	"!\n\0"
 :name	_	; String buffer to end of RAM
 
